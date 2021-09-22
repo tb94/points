@@ -1,0 +1,21 @@
+{
+  "name": "points",
+  "version": "1.0.0",
+  "description": "discord bot for managing server points",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "deploy-db": "node dbInit.js",
+    "deploy-commands": "node deploy-commands.js"
+  },
+  "author": "Tim Bretz",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/builders": "^0.6.0",
+    "@discordjs/rest": "^0.1.0-canary.0",
+    "discord-api-types": "^0.23.1",
+    "discord.js": "^13.1.0",
+    "sequelize": "^6.6.5",
+    "sqlite3": "^5.0.2"
+  }
+}
