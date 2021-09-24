@@ -11,7 +11,9 @@ module.exports = {
 			.setDescription('Whose balance to check')),
 	async execute(interaction) {
 		const target = interaction.options.getUser('user') ?? interaction.user;
-		await interaction.reply(`${target} has ${currency.getBalance(target.id)} 💰`);
+		User.findOne({ where: { username: target.tag } })
+		.then(u => interaction.reply(`${target} has ${u.balance} 💰`))
+		.catch(err => console.error(err));
 	},
 };
 
