@@ -17,6 +17,9 @@ module.exports = {
 		if (user.balance < bet) { 
 			await interaction.reply("You don't have that many points!");
 			return;
+		} else if (bet <=0) {
+			await interaction.reply("You have to bet a real amount");
+			return;
 		}
 		
 		if (win) {
