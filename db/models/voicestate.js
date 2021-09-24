@@ -1,7 +1,9 @@
-const { Model } = require('sequelize');
-
+'use strict';
+const {
+  Model
+} = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class User extends Model {
+  class VoiceState extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -9,26 +11,16 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      User.hasOne(models.VoiceState);
+      VoiceState.belongsTo(models.User);
     }
   };
-
-  User.init({
-    username: {
-      type: DataTypes.STRING,
-      unique: true
-    },
-    guild: DataTypes.STRING,
-    balance: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-      allowNull: false
-    }
+  VoiceState.init({
+    channelId: DataTypes.STRING,
+    timestamp: DataTypes.DATE
   }, {
     sequelize,
     timestamps: false,
-    modelName: 'User',
+    modelName: 'VoiceState',
   });
-
-  return User;
+  return VoiceState;
 };
