@@ -8,6 +8,6 @@ module.exports = {
 
         let user = await User.findOne({ where: { username: message.author.tag } });
         if (!user) return;
-        await user.increment('balance', { by: message.content.length });
+        await user.increment('balance');
     }
 }
