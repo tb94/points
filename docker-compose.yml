@@ -4,6 +4,7 @@ services:
   bot:
     build: ./app
     image: points-bot
+    restart: always
     env_file: ./.env
     environment:
       MYSQL_HOST: mysqldb

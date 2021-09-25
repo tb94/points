@@ -4,7 +4,7 @@ const { token } = require('./config/config.json');
 const { sequelize } = require('./db/models');
 
 // Keep DB in sync
-sequelize.sync({ force: true });
+// sequelize.sync({ force: true });
 
 // Create a new client instance
 const client = new Client({
