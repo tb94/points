@@ -2,24 +2,22 @@ version: "3.8"
 
 services:
   bot:
-    build: .
+    build: ./app
     image: points-bot
+    restart: always
+    env_file: ./.env
+    environment:
+      MYSQL_HOST: mysqldb
     depends_on:
       - mysqldb
   mysqldb:
     image: mysql
     restart: always
     env_file: ./.env
-    environment:
-      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
-      MYSQL_DATABASE: $MYSQL_DATABASE
     ports:
-      - $MYSQL_LOCAL_PORT:$MYSQL_LOCAL_PORT
+      - $MYSQL_PORT:$MYSQL_PORT
     volumes:
-      - db-config:/etc/mysql
-      - db-data:/var/lib/mysql
-      - ./db/backup/files:/data_backup/data
+      - db:/var/lib/mysql
 
 volumes:
-  db-config:
-  db-data:
+  db:
