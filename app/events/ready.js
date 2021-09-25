@@ -18,8 +18,8 @@ module.exports = {
                         where: { username: member.user.tag, guild: member.guild.id }
                     });
                 }));
-            })
-            .catch(err => console.err(err)));
+            }))
+            .catch(err => console.err(err));
 
         console.log(`Ready! Logged in as ${client.user.tag}`);
     },
