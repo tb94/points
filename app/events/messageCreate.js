@@ -6,8 +6,7 @@ module.exports = {
         // author gets points 
         if (message.author.bot) return;
 
-        let user = await User.findOne({ where: { username: message.author.tag } });
-        if (!user) return;
-        await user.increment('balance');
+        User.findCreateFind({ where: { username: message.author.tag, guild: message.guildId } })
+        .then(user => user.increment('balance'));
     }
 }

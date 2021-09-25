@@ -1,7 +1,10 @@
+const { User } = require("../db/models");
+
 module.exports = {
 	name: 'interactionCreate',
 	async execute(interaction) {
 		console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered an interaction.`);
+        User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guild.id } });
 
         if (!interaction.isCommand()) return;
 

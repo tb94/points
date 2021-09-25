@@ -10,7 +10,7 @@ module.exports = {
 			.setRequired(true)
 			.setDescription('How many points to bet')),
 	async execute(interaction) {
-		let user = await User.findOne({ where: { username: interaction.user.tag } });
+		let user = await User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } });
 		let bet = interaction.options.getInteger('points');
 		let win = Math.round(Math.random()) == 1;
 

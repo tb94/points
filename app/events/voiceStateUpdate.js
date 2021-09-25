@@ -1,4 +1,4 @@
-const { User, VoiceState } = require("../db/models");
+const { User } = require("../db/models");
 
 module.exports = {
     name: 'voiceStateUpdate',
@@ -8,14 +8,14 @@ module.exports = {
 
         // joining a voice chat
         if (oldState.channelId == null) {
-            User.findOne({ where: { username: oldState.member.user.tag } })
+            User.findCreateFind({ where: { username: newState.member.user.tag, guild: newState.guild.id } })
                 .then(u => u.createVoiceState({ channelId: newState.channelId, timestamp: t }))
                 .catch(err => console.error(err));
         }
 
         // leaving a voice chat
-        if (newState.channelId == null) {
-            let user = await User.findOne({ where: { username: oldState.member.user.tag } });
+        if (newState.channelId == null || newState.channelId == newState.guild.afkChannelId) {
+            let user = await User.findCreateFind({ where: { username: oldState.member.user.tag, guild: oldState.guild.id } });
             let voiceState = await user.getVoiceState();
             let minutes = Math.floor((t - voiceState.timestamp) / 60000);
             voiceState.destroy();
