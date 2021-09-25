@@ -22,12 +22,6 @@ module.exports = {
     database: process.env.MYSQL_DATABASE,
     host: process.env.MYSQL_HOST,
     port: process.env.MYSQL_PORT,
-    dialect: 'mysql',
-    pool: {
-      max: 5,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    }
+    dialect: 'mysql'
   }
 }
