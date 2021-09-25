@@ -7,7 +7,7 @@ module.exports = {
         .setDescription('Shows the top members'),
     async execute(interaction) {
         let members = await interaction.guild.members.fetch();
-        let users = await User.findAll();
+        let users = await User.findAll({ where: { guild: interaction.guild.id } });
 
         users = users.filter(u => u.guild == interaction.guild.id);
         users.sort((u1, u2) => u2.balance - u1.balance);
