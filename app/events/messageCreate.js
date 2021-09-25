@@ -7,6 +7,6 @@ module.exports = {
         if (message.author.bot) return;
 
         User.findCreateFind({ where: { username: message.author.tag, guild: message.guildId } })
-        .then(user => user.increment('balance'));
+            .then(([user, isNew]) => user.increment('balance'));
     }
 }
