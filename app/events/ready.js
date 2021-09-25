@@ -19,7 +19,7 @@ module.exports = {
                     });
                 }));
             })
-            .catch(err => console.err(err)));
+            .catch(err => console.error(err)));
 
         console.log(`Ready! Logged in as ${client.user.tag}`);
     },
