@@ -14,10 +14,7 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   User.init({
-    username: {
-      type: DataTypes.STRING,
-      unique: true
-    },
+    username: DataTypes.STRING,
     guild: DataTypes.STRING,
     balance: {
       type: DataTypes.INTEGER,
@@ -28,6 +25,7 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     timestamps: false,
     modelName: 'User',
+    indexes: [{ unique: true, fields: ['username', 'guild']}]
   });
 
   return User;
