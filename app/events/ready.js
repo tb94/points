@@ -13,7 +13,7 @@ module.exports = {
             .then(g => g.members.fetch({ force: true }))
             .then(members => {
                 members.filter(m => !m.user.bot).forEach(member => {
-                    populateDB(member.user);
+                    populateDB(member.user, member.guild).then();
                 });
             }));
 
@@ -21,8 +21,8 @@ module.exports = {
     },
 };
 
-function populateDB(user) {
+function populateDB(user, guild) {
     return User.findOrCreate({
-        where: { username: user.tag }
+        where: { username: user.tag, guild: guild.id }
     });
 }
