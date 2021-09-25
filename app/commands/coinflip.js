@@ -10,26 +10,24 @@ module.exports = {
 			.setRequired(true)
 			.setDescription('How many points to bet')),
 	async execute(interaction) {
-		let user = await User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } });
 		let bet = interaction.options.getInteger('points');
 		let win = Math.round(Math.random()) == 1;
 
-		if (user.balance < bet) { 
-			await interaction.reply("You don't have that many points!");
-			return;
-		} else if (bet <=0) {
-			await interaction.reply("You have to bet a real amount");
-			return;
-		}
-		
-		if (win) {
-			await user.increment('balance', { by: bet })
-		} else {
-			await user.decrement('balance', { by: bet });
-		}
-		await user.reload();
-		await interaction.reply(`You ${win ? "Won" : "Lost"}! Your current balance is ${user.balance} 💰`);
-	},
+		if (bet <= 0) return interaction.reply("You have to bet a real amount");
+
+		User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
+			.then(([user]) => {
+				if (user.balance < bet) return interaction.reply("You don't have that many points!");
+
+				if (win) {
+					return user.increment('balance', { by: bet }).then(() => user.reload());
+				} else {
+					return user.decrement('balance', { by: bet }).then(() => user.reload());
+				}
+			})
+			.then(user => interaction.reply(`You ${win ? "Won" : "Lost"}! Your current balance is ${user.balance} 💰`))
+			.catch(err => console.error(err));
+	}
 };
 
 // https://discordjs.guide/creating-your-bot/command-handling.html#individual-command-files
