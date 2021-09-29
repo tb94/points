@@ -5,7 +5,7 @@ const { sequelize, User } = require('./db/models');
 const { Op } = require('sequelize');
 
 // Keep DB in sync
-sequelize.sync({ force: true });
+sequelize.sync({ force: process.env.NODE_ENV === 'development' });
 
 // Create a new client instance
 const client = new Client({
@@ -55,7 +55,7 @@ for (const c of commands) {
 
 setInterval(() => User.findAll({ where: { voiceActivity: { [Op.not]: null } } })
 	.then(users => users.forEach(u => u.increment('balance'))),
-	1000 * 10);
+	1000 * 60);
 
 // Login to Discord with your client's token
 client.login(token);
