@@ -15,3 +15,7 @@ Displays the top 3 users and their points in the current guild
 
 ### /coinflip `points`
 Bets the amount of `points` on a 50/50 chance
+
+## Earning Points
+### Overview
+Points are awarded to users for activity in the guild/server. Sending messages, being in voice channels, and interactions with the bot (/coinflip)
