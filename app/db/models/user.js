@@ -9,7 +9,6 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      User.hasOne(models.VoiceState);
     }
   };
 
@@ -20,7 +19,8 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       defaultValue: 0,
       allowNull: false
-    }
+    },
+    voiceActivity: DataTypes.DATE
   }, {
     sequelize,
     timestamps: false,

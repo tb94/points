@@ -1,10 +1,11 @@
 const fs = require('fs');
 const { Client, Collection, Intents } = require('discord.js');
 const { token } = require('./config/config.json');
-const { sequelize } = require('./db/models');
+const { sequelize, User } = require('./db/models');
+const { Op } = require('sequelize');
 
 // Keep DB in sync
-sequelize.sync({ force: process.env.NODE_ENV == 'development' });
+sequelize.sync({ force: true });
 
 // Create a new client instance
 const client = new Client({
@@ -51,6 +52,10 @@ for (const c of commands) {
 	client.commands.set(command.data.name, command);
 	console.log(`Registered command: ${command.data.name}`)
 }
+
+setInterval(() => User.findAll({ where: { voiceActivity: { [Op.not]: null } } })
+	.then(users => users.forEach(u => u.increment('balance'))),
+	1000 * 10);
 
 // Login to Discord with your client's token
 client.login(token);
