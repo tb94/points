@@ -17,4 +17,4 @@ Displays a user's current balance. Tags the user.
 Displays the top 3 users and their points in the current guild
 
 ### /coinflip `points`
-Bets the amount of `points` on a 50/50 chance
+Bets the amount of `points` on a 50/50 chance. winning adds `points` to the user's balance, losing subracts `points`
