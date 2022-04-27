@@ -23,12 +23,11 @@ module.exports = {
                 var place = 0;
                 var embed = new MessageEmbed()
                 .setTitle("Leaderboard")
-                .setDescription("\u200B");
 
                 for (var user of users) {
                     member = members.find(m => m.user.tag == user.username);
                     embed.addFields(
-                        { name: "\u200b", value: "\u200b"},
+                        { name: "\u200b", value: "\u200b", inline: true},
                         { name: `${medals[place]}`, value: `${member.user} \t ${user.balance} 💰`});
                     place++;
                 }
