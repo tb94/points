@@ -19,7 +19,7 @@ module.exports = {
                 limit: 3
             }).then(users => {
                 var leaders = [];
-                var first = interaction.client.emojis.cache.find(emoji => emoji.name === "first_place");
+                var first = interaction.client.emojis.forEach(e => console.log(e));
                 var second = interaction.client.emojis.cache.find(emoji => emoji.name === "second_place");
                 var third = interaction.client.emojis.cache.find(emoji => emoji.name === "third_place");
 
