@@ -4,6 +4,7 @@ module.exports = {
 	name: 'interactionCreate',
 	async execute(interaction) {
 		console.log(`${interaction.user.tag} in #${interaction.channel.name} triggered an interaction.`);
+        if (!interaction.user.bot)
         User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guild.id } });
 
         if (!interaction.isCommand()) return;

@@ -11,9 +11,14 @@ module.exports = {
 			.setDescription('Whose balance to check')),
 	async execute(interaction) {
 		const target = await interaction.options.getUser('user') ?? interaction.user;
-		User.findCreateFind({ where: { username: target.tag, guild: interaction.guildId } })
-		.then(([u]) => interaction.reply(`${target} has ${u.balance} 💰`))
-		.catch(err => console.error(err));
+
+		if (target.bot) {
+			interaction.reply({ content: `${target} cannot earn points`, ephemeral: true });
+		} else {
+			User.findCreateFind({ where: { username: target.tag, guild: interaction.guildId } })
+				.then(([u]) => interaction.reply(`${target} has ${u.balance} 💰`))
+				.catch(err => console.error(err));
+		}
 	},
 };
 
