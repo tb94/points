@@ -18,17 +18,17 @@ module.exports = {
                 order: [['balance', 'DESC']],
                 limit: 3
             }).then(users => {
+                var leaders;
+
+                for (var user in users) {
+                    leaders.push({ name: `${members.find(m => m.user.tag == user.username).user}`, value: user.balance})
+                }
                 const embed = {
                     title: 'Leaderboard',
-                    fields: users.map(u => {
-                        return {
-                            name: members.find(m => m.user.tag == u.username),
-                            value: u.balance
-                        }
-                    })
+                    fields: leaders
                 }
 
-                interaction.reply({embeds: [embed]})
+                interaction.reply({ embeds: [embed] })
             }));
         // interaction.reply(`${users.map(u => `${members.find(m => m.user.tag == u.username)} \t ${u.balance}`).join('\n')}`)));
     }
