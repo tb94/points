@@ -18,7 +18,7 @@ module.exports = {
                 order: [['balance', 'DESC']],
                 limit: 3
             }).then(users => {
-                var leaders;
+                var leaders = [];
 
                 for (var user in users) {
                     leaders.push({ name: `${members.find(m => m.user.tag == user.username).user}`, value: user.balance})
