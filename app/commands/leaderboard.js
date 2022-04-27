@@ -21,9 +21,8 @@ module.exports = {
                 var leaders = [];
 
                 for (var user of users) {
-                    leader = members.find(m => m.user.tag == user.username);
-                    console.log(leader);
-                    leaders.push({ name: leader.id, value: user.balance})
+                    member = members.find(m => m.user.tag == user.username);
+                    leaders.push({ name: `${member.user}`, value: user.balance})
                 }
                 const embed = {
                     title: 'Leaderboard',
