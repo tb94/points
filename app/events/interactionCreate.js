@@ -7,17 +7,27 @@ module.exports = {
         if (!interaction.user.bot)
         User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guild.id } });
 
-        if (!interaction.isCommand()) return;
+        switch (true) {
+            case interaction.isCommand():
+                const command = interaction.client.commands.get(interaction.commandName);
 
-        const command = interaction.client.commands.get(interaction.commandName);
+                if (!command) return;
 
-        if (!command) return;
-
-        try {
-            await command.execute(interaction);
-        } catch (err) {
-            console.error(err);
-            await interaction.reply({ content: `There was an error executing command: ${command.name}`, ephemeral: true });
+                try {
+                    await command.execute(interaction);
+                } catch (err) {
+                    console.error(err);
+                    await interaction.reply({ content: `There was an error executing command: ${command.name}`, ephemeral: true });
+                }
+                break;
+            case interaction.isButton():
+                console.log("is button");
+                break;
+            case interaction.isSelectMenu():
+                console.log("is menu");
+                break;
+            default:
+                break;
         }
-	}
+    }
 };
