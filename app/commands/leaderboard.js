@@ -22,7 +22,7 @@ module.exports = {
 
                 for (var user of users) {
                     member = members.find(m => m.user.tag == user.username);
-                    leaders.push({ name: `${member.user.username}`, value: `${user.balance}`})
+                    leaders.push({ name: `@${member.user.username}`, value: `${user.balance}`})
                 }
                 const embed = {
                     title: 'Leaderboard',
