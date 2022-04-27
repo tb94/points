@@ -19,14 +19,15 @@ module.exports = {
                 limit: 3
             }).then(users => {
                 var leaders = [];
-                var medal = [
-                    interaction.client.emojis.cache.find(emoji => emoji.name === "first_place"),
-                    interaction.client.emojis.cache.find(emoji => emoji.name === "second_place"),
-                    interaction.client.emojis.cache.find(emoji => emoji.name === "third_place")
-                ];
+                var first = interaction.client.emojis.cache.find(emoji => emoji.name === "first_place");
+                var second = interaction.client.emojis.cache.find(emoji => emoji.name === "second_place");
+                var third = interaction.client.emojis.cache.find(emoji => emoji.name === "third_place");
+
+                var medal = [first, second, third];
 
                 var place = 0;
 
+                console.log(medal);
                 for (var user of users) {
                     member = members.find(m => m.user.tag == user.username);
                     leaders.push({ name: `${medal[place]} \t ${member.user.username}`, value: `\t ${user.balance}`})
@@ -36,8 +37,6 @@ module.exports = {
                     title: 'Leaderboard',
                     fields: leaders
                 }
-
-                console.log(embed);
 
                 interaction.reply({ embeds: [embed] })
             }));
