@@ -20,7 +20,7 @@ module.exports = {
             }).then(users => {
                 var leaders = [];
 
-                for (var user in users) {
+                for (var user of users) {
                     leader = members.find(m => m.user.tag == user.username);
                     console.log(user);
                     leaders.push({ name: leader.id, value: user.balance})
