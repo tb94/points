@@ -22,7 +22,6 @@ module.exports = {
                 var medals = ["🥇", "🥈" , "🥉"];
                 var place = 0;
 
-                console.log(medal);
                 for (var user of users) {
                     member = members.find(m => m.user.tag == user.username);
                     leaders.push({ name: `${medals[place]} \t ${member.user.username}`, value: `\t ${user.balance}`})
