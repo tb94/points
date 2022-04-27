@@ -26,7 +26,10 @@ module.exports = {
 
                 for (var user of users) {
                     member = members.find(m => m.user.tag == user.username);
-                    embed.addField(`${medals[place]}`, `${member.user} \t\t\t ${user.balance} 💰`);
+                    embed.addFields({ name: "\u200b", value:`${medals[place]}`, inline: true},
+                    { name: "\u200b", value: `${member.user}`, inline: true},
+                    { name: "\u200b", value: `${user.balance} 💰`, inline: true},
+                    { name: "\u200b", value: "\u200b"});
                     place++;
                 }
 
