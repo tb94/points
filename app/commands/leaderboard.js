@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { User } = require('../db/models');
-const { Op } = require('sequelize')
+const { Op } = require('sequelize');
+const { MessageEmbed } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -18,18 +19,18 @@ module.exports = {
                 order: [['balance', 'DESC']],
                 limit: 3
             }).then(users => {
-                var leaders = [];
                 var medals = ["🥇", "🥈" , "🥉"];
                 var place = 0;
+                var embed = new MessageEmbed()
+                .setTitle("Leaderboard")
+                .setDescription("\u200B");
 
                 for (var user of users) {
                     member = members.find(m => m.user.tag == user.username);
-                    leaders.push({ name: `${medals[place]} ${member.user.username}`, value: `${user.balance} 💰`})
+                    embed.addFields(
+                        { name: "\u200b", value: "\u200b"},
+                        { name: `${medals[place]}`, value: `${member.user} \t ${user.balance} 💰`});
                     place++;
-                }
-                const embed = {
-                    title: 'Leaderboard',
-                    fields: leaders
                 }
 
                 interaction.reply({ embeds: [embed] })
