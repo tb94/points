@@ -34,6 +34,5 @@ module.exports = {
 
                 interaction.reply({ embeds: [embed] })
             }));
-        // interaction.reply(`${users.map(u => `${members.find(m => m.user.tag == u.username)} \t ${u.balance}`).join('\n')}`)));
     }
 };
