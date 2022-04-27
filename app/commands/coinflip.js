@@ -13,7 +13,7 @@ module.exports = {
 		let bet = interaction.options.getInteger('points');
 		let win = Math.round(Math.random()) == 1;
 
-		if (bet <= 0) return interaction.reply("You have to bet a real amount");
+		if (bet <= 0) return interaction.reply({ content: "You have to bet a real amount", ephemeral: true });
 
 		User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
 			.then(([user]) => {

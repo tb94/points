@@ -21,6 +21,7 @@ function joinChat(newState) {
     const t = Date.now();
 
     console.log(`${newState.member.user.username} is joining chat in ${newState.guild.id}`)
+    if (!newState.member.user.bot)
     return User.findCreateFind({ where: { username: newState.member.user.tag, guild: newState.guild.id } })
         .then(([u]) => u.set('voiceActivity', t))
         .then(u => u.save())
@@ -28,6 +29,7 @@ function joinChat(newState) {
 }
 
 function leaveChat(oldState) {
+    if (!oldState.member.user.bot)
     return User.findCreateFind({ where: { username: oldState.member.user.tag, guild: oldState.guild.id } })
         .then(([u]) => u.set('voiceActivity', null))
         .then(u => u.save())
