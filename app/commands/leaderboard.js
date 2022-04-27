@@ -24,7 +24,7 @@ module.exports = {
 
                 for (var user of users) {
                     member = members.find(m => m.user.tag == user.username);
-                    leaders.push({ name: `${medals[place]} \t ${member.user.username}`, value: `\t ${user.balance}`})
+                    leaders.push({ name: `${medals[place]}`, value: `${member.user.username}\t ${user.balance}`})
                     place++;
                 }
                 const embed = {
