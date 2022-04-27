@@ -1,10 +1,9 @@
 const { User } = require("../db/models");
 
 module.exports = {
-    name: 'guildMemberAdd',
+    name: 'guildMemberRemove',
     async execute(guildMember) {
-        if (!guildMember.user.bot)
-        await User.findCreateFind({
+        await User.destroy({
             where: { username: guildMember.user.tag, guild: guildMember.guild.id }
         });
     }

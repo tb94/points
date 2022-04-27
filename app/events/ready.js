@@ -21,6 +21,15 @@ module.exports = {
         //     .then(() => console.log("Database populated"))
         //     .catch(err => console.error(err)));
 
+        await oauth2Guilds.forEach(pg => pg.fetch()
+        .then(g => g.members.fetch({ force: true }))
+        .then(members => {
+            return Promise.all(members.filter(m => m.user.bot).map(async (member) => {
+                return User.destroy({
+                    where: { username: member.user.tag, guild: member.guild.id }
+                });
+            }));
+        }));
         console.log(`Ready! Logged in as ${client.user.tag}`);
     },
 };
