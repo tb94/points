@@ -7,18 +7,16 @@ module.exports = {
         .setName('leaderboard')
         .setDescription('Shows the top members'),
     async execute(interaction) {
-        var guildMembers = interaction.guild.members.fetch();
-
-        User.findAll({
-            where: { 
-                guild: interaction.guild.id,
-                username: {
-                    [Op.in]: guildMembers.map(m => m.user.tag)
-                }
-             },
-            order: [['balance', 'DESC']],
-            limit: 3
-        }).then(users => interaction.guild.members.fetch()
-            .then(members => interaction.reply(`${users.map(u => `${members.find(m => m.user.tag == u.username)} \t ${u.balance}`).join('\n')}`)));
+        interaction.guild.members.fetch()
+            .then(members => User.findAll({
+                where: {
+                    guild: interaction.guild.id,
+                    username: {
+                        [Op.in]: members.map(m => m.user.tag)
+                    }
+                },
+                order: [['balance', 'DESC']],
+                limit: 3
+            }).then(users => interaction.reply(`${users.map(u => `${members.find(m => m.user.tag == u.username)} \t ${u.balance}`).join('\n')}`)));
     }
 };
