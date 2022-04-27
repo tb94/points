@@ -17,7 +17,10 @@ module.exports = {
 
 		User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
 			.then(([user]) => {
-				if (user.balance < bet) return interaction.reply("You don't have that many points!");
+				if (user.balance < bet) {
+					 interaction.reply({ content: "You don't have that many points!", ephemeral: true });
+					 throw new Error('User bet more than they had');
+				}
 
 				if (win) {
 					return user.increment('balance', { by: bet }).then(() => user.reload());
