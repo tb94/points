@@ -5,6 +5,7 @@ const { token } = require('./config/config.json')[env];
 const { sequelize, User } = require('./db/models');
 const { Op } = require('sequelize');
 
+console.log(env);
 // Keep DB in sync
 sequelize.sync({ force: env === 'development' });
 
