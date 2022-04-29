@@ -1,7 +1,7 @@
 const env = process.env.NODE_ENV || "development";
 const fs = require('fs');
 const { Client, Collection, Intents } = require('discord.js');
-const config = require('./config/config.json');
+const { token } = require('./config/config.json')[env];
 const { sequelize, User } = require('./db/models');
 const { Op } = require('sequelize');
 
@@ -60,4 +60,4 @@ setInterval(() => User.findAll({ where: { voiceActivity: { [Op.not]: null } } })
 	1000 * 60);
 
 // Login to Discord with your client's token
-client.login(config.token);
+client.login(token);
