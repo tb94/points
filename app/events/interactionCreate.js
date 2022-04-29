@@ -21,7 +21,16 @@ module.exports = {
                 }
                 break;
             case interaction.isButton():
-                console.log(interaction);
+                switch (interaction.message?.interaction?.commandName) {
+                    case "hit":
+                    case "stay":
+                    case "split":
+                    case "double":
+                    default:
+                        interaction.update({ content: `Thank you for pressing ${interaction.customId}` });
+                        console.log(interaction);
+                        break;
+                }
                 break;
             case interaction.isSelectMenu():
                 console.log(interaction);
