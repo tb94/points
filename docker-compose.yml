@@ -3,7 +3,7 @@ version: "3.8"
 services:
   bot:
     build: ./app
-    image: points-bot
+    image: points
     restart: unless-stopped
     env_file: ./.env
     environment:
