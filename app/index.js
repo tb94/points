@@ -1,11 +1,12 @@
+const env = process.env.NODE_ENV || "development";
 const fs = require('fs');
 const { Client, Collection, Intents } = require('discord.js');
-const { token } = require('./config/config.json');
+const { token } = require('./config/config.json')[env];
 const { sequelize, User } = require('./db/models');
 const { Op } = require('sequelize');
 
 // Keep DB in sync
-sequelize.sync({ force: process.env.NODE_ENV === 'development' });
+sequelize.sync({ force: env === 'development' });
 
 // Create a new client instance
 const client = new Client({

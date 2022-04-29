@@ -1,7 +1,8 @@
+const env = process.env.NODE_ENV || "development";
 const fs = require('fs');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
-const { clientId, guildId, token } = require('./config/config.json');
+const { clientId, guildId, token } = require('./config/config.json')[env];
 
 const commands = [];
 const commandFiles = fs.readdirSync('./commands')
