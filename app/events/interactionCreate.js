@@ -21,10 +21,10 @@ module.exports = {
                 }
                 break;
             case interaction.isButton():
-                console.log("is button");
+                console.log(interaction);
                 break;
             case interaction.isSelectMenu():
-                console.log("is menu");
+                console.log(interaction);
                 break;
             default:
                 break;
