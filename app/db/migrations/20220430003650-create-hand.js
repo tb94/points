@@ -8,11 +8,8 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      cardId: {
-        type: Sequelize.INTEGER
-      },
-      id: {
-        type: Sequelize.INTEGER
+      card: {
+        type: Sequelize.STRING
       }
     });
   },

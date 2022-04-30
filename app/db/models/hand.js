@@ -1,4 +1,4 @@
-const { Model } = require('sequelize');
+const { Model, Op } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
   class Hand extends Model {
@@ -10,11 +10,17 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       Hand.Player = Hand.belongsTo(models.Player);
+      Hand.Dealer = Hand.belongsTo(models.Blackjack)
     }
+
+    static refresh() {
+      Hand.destroy({ where: { card: {[Op.not]: null } } });
+    }
+
   };
 
   Hand.init({
-    cardId: DataTypes.INTEGER,
+    card: DataTypes.STRING,
   }, {
     sequelize,
     timestamps: false,
