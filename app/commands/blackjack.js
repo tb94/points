@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageActionRow, MessageButton } = require('discord.js');
-const { User } = require('../db/models');
+const { User, Player, Blackjack, Hand } = require('../db/models');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -27,26 +27,40 @@ module.exports = {
                         new MessageButton()
                             .setCustomId('hit')
                             .setLabel('Hit')
-                            .setStyle('SUCCESS'),
+                            .setStyle('SUCCESS')
+                            .setDisabled(true),
                         new MessageButton()
                             .setCustomId('stay')
                             .setLabel('Stay')
-                            .setStyle('DANGER'),
+                            .setStyle('DANGER')
+                            .setDisabled(true),
                         new MessageButton()
                             .setCustomId('split')
                             .setLabel('Split')
-                            .setStyle('SECONDARY'),
+                            .setStyle('SECONDARY')
+                            .setDisabled(true),
                         new MessageButton()
                             .setCustomId('double')
                             .setLabel('Double Down')
                             .setStyle('PRIMARY')
+                            .setDisabled(true)
                     );
 
-                    // create table specific to the channel and server, add user to the table if it already exists
-                        // if table is already started, respond with ephemeral to try the next hand
+                // create table specific to the channel and server, add user to the table if it already exists
+                Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: Player })
+                    .then(([table]) => {
+                        // set start time 1 minute from now
+                        table.startTime = Date.now() + (60 * 60 * 1000);
+                        table.save();
+                        return Player.findCreateFind({ where: { tableId: table.id, userId: user.username } })
+                    }).then(([player]) => {
+                        player.bet = bet;
+                        player.save();
+                        return player.getBlackjack();
+                    }).then((table) => interaction.reply({ content: `Hands will be dealt in ${Math.round((table.startTime.getTime() - Date.now())  / 60000)} seconds`, components: [row] }))
+                    // if table is already started, respond with ephemeral to try the next hand
                     // each table should have a dealer, deck, and 1+ users (timestamp of when the hand will be dealt - can be extended as users enter - show countown in embed)
                     // reply with notification to join the table and wait for more users to join
-                return interaction.reply({ content: 'this is a message with buttons', components: [row] })
                     .then(() => {
                         // wait for users to be seated
 
@@ -56,14 +70,13 @@ module.exports = {
 
                         // respond to bets with the appropriate buttons in order of seats at the table
                         // deal appropriately
-                    });
-
-            })
-            // .then(user => interaction.reply(`You ${win ? "Won" : "Lost"}! Your current balance is ${user.balance} 💰`))
-            .catch(err => console.error(err));
+                    })
+                    // .then(user => interaction.reply(`You ${win ? "Won" : "Lost"}! Your current balance is ${user.balance} 💰`))
+                    .catch(err => console.error(err));
+            });
     }
-};
 
+}
 // if (win) {
 //     return user.increment('balance', { by: bet }).then(() => user.reload());
 // } else {

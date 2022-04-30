@@ -22,13 +22,9 @@ module.exports = {
                 break;
             case interaction.isButton():
                 switch (interaction.message?.interaction?.commandName) {
-                    case "hit":
-                    case "stay":
-                    case "split":
-                    case "double":
+                    case "blackjack":
                     default:
                         interaction.update({ content: `Thank you for pressing ${interaction.customId}` });
-                        console.log(interaction);
                         break;
                 }
                 break;

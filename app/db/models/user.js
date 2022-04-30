@@ -9,10 +9,16 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      models.User.Player = User.hasOne(models.Player);
     }
   };
 
   User.init({
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+    },
     username: DataTypes.STRING,
     guild: DataTypes.STRING,
     balance: {
