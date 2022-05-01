@@ -32,7 +32,7 @@ module.exports = {
         //     }));
         // }));
 
-        client.user.setPresence({ activities: [{ name: 'Keeping score', type: 'CUSTOM_STATUS' }], status: 'online'})
+        client.user.setPresence({ activities: [{ name: 'Keeping score', type: 'CUSTOM' }]});
         await Blackjack.afterCreate(async (table, options) => new BlackjackGame(table, client))
         console.log(`Ready! Logged in as ${client.user.tag}`);
     },

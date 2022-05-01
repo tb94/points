@@ -1,8 +1,31 @@
 const { Hand } = require('../db/models');
-const { MessageEmbed } = require('discord.js');
+const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
 const SUITS = ["♠", "♣", "♥", "♦"];
 const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+const row = new MessageActionRow()
+    .addComponents(
+        new MessageButton()
+            .setCustomId('hit')
+            .setLabel('Hit')
+            .setStyle('SUCCESS'),
+            // .setDisabled(true),
+        new MessageButton()
+            .setCustomId('stay')
+            .setLabel('Stay')
+            .setStyle('DANGER'),
+            // .setDisabled(true),
+        // new MessageButton()
+        //     .setCustomId('split')
+        //     .setLabel('Split')
+        //     .setStyle('SECONDARY')
+        //     .setDisabled(true),
+        new MessageButton()
+            .setCustomId('double')
+            .setLabel('Double')
+            .setStyle('PRIMARY'),
+            // .setDisabled(true)
+    );
 
 class BlackjackGame {
     constructor(table, client) {
@@ -26,34 +49,8 @@ class BlackjackGame {
 
         let channel = this.client.channels.cache.get(this.table.channel);
         let message = await channel.send(`Blackjack`);
-        let embeds = [];
-
-        this.table.getHands()
-            .then(dealerCards => {
-                let dealerEmbed = new MessageEmbed()
-                    .setTitle("Dealer Hand");
-
-                dealerCards.forEach((hand, index) => {
-                    dealerEmbed.addFields({ name: `\u200b`, value: `${index == 0 ? "🂠" : hand.card}`, inline: true });
-                });
-                embeds.push(dealerEmbed);
-            });
-
-        for (let player of players) {
-            let playerCards = await player.getHands();
-            let user = await player.getUser();
-
-            let playerEmbed = new MessageEmbed()
-                .setTitle(`${user.username.split('#')}`)
-                .setDescription(`${player.bet} 💰`);
-
-            playerCards.forEach(hand => {
-                playerEmbed.addFields({ name: "\u200b", value: `${hand.card}`, inline: true });
-            });
-
-            embeds.push(playerEmbed);
-            message.edit({ embeds: embeds });
-        }
+        await this.updateHands(players, message);
+        message.edit({ components: [row] });
     }
 
     deal(players) {
@@ -67,6 +64,34 @@ class BlackjackGame {
         players.forEach(player => Hand.create({ PlayerId: player.id, card: this.deck.draw().toString() }));
 
         Hand.create({ BlackjackId: this.table.id, card: this.deck.draw().toString() });
+    }
+
+    async updateHands(players, message) {
+        let embeds = [];
+        let dealerCards = await this.table.getHands()
+        let dealerEmbed = new MessageEmbed()
+                    .setTitle("Dealer Hand");
+
+        dealerCards.forEach((hand, index) => {
+            dealerEmbed.addFields({ name: `\u200b`, value: `${index == 0 ? "🂠" : hand.card}`, inline: true });
+        });
+        embeds.push(dealerEmbed);
+
+        await Promise.all(players.map(async (player) => {
+            let user = await player.getUser();
+            let playerCards = await player.getHands();
+            let playerEmbed = new MessageEmbed()
+                .setTitle(`${user.username.split('#')[0]}`);
+
+            playerCards.forEach(hand => {
+                playerEmbed.addFields({ name: "\u200b", value: `${hand.card}`, inline: true });
+            });
+
+            // playerEmbed.setDescription("hand total");
+            embeds.push(playerEmbed);
+        }));
+
+        message.edit({ embeds: embeds });
     }
 }
 

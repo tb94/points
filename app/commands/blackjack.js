@@ -18,44 +18,13 @@ module.exports = {
         let [user] = await User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
         if (user.balance < bet) return interaction.reply({ content: "You don't have that many points!", ephemeral: true });
 
-        let [table] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, defaults: { startTime: (Date.now() + (3 * 1000)) } });
+        let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, defaults: { startTime: (Date.now() + (10 * 1000)) } });
         if (table.startTime.getTime() < Date.now()) return interaction.reply({ content: "Game already in session, wait for next hand", ephemeral: true });
 
-        Player.findCreateFind({ where: { tableId: table.id, UserId: user.id }, defaults: { bet: bet } });
+        let [player, newPlayer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: user.id }, defaults: { bet: bet } });
 
-        await interaction.reply({ content: `Hands will be dealt in ${Math.round((table.startTime.getTime() - Date.now()) / 1000)} seconds` });
-        // wait for users to be seated
-        while (table.startTime.getTime() > Date.now()) {
-            await Promise.all([
-                interaction.editReply({ content: `Hands will be dealt in ${Math.round((table.startTime.getTime() - Date.now()) / 1000)} seconds` }),
-                new Promise((resolve) => { setTimeout(resolve, 950); })
-            ]);
-        }
-
-        return interaction.deleteReply();
+        if (!newPlayer) return interaction.reply({ content: `You are already playing blackjack! Please wait for other players to join`, ephemeral: true });
+        if (newTable) return interaction.reply({ content: `${interaction.user} has started a round of blackjack! Use /blackjack to join in.`});
+        return interaction.reply({ content: `${interaction.user} has joined blackjack!`});
     }
 }
-
-const row = new MessageActionRow()
-    .addComponents(
-        new MessageButton()
-            .setCustomId('hit')
-            .setLabel('Hit')
-            .setStyle('SUCCESS')
-            .setDisabled(true),
-        new MessageButton()
-            .setCustomId('stay')
-            .setLabel('Stay')
-            .setStyle('DANGER')
-            .setDisabled(true),
-        // new MessageButton()
-        //     .setCustomId('split')
-        //     .setLabel('Split')
-        //     .setStyle('SECONDARY')
-        //     .setDisabled(true),
-        new MessageButton()
-            .setCustomId('double')
-            .setLabel('Double')
-            .setStyle('PRIMARY')
-            .setDisabled(true)
-    );
