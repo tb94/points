@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       Player.User = Player.belongsTo(models.User);
       Player.BlackJack = Player.belongsTo(models.Blackjack, { foreignKey: 'tableId' });
-      Player.Hand = Player.hasMany(models.Hand);
+      Player.Hand = Player.hasMany(models.Hand, { onDelete: 'CASCADE' });
     }
   };
 

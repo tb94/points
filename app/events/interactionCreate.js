@@ -1,5 +1,4 @@
 const { User } = require("../db/models");
-const { BlackjackGame } = require("../games/blackjack");
 
 module.exports = {
 	name: 'interactionCreate',
@@ -21,17 +20,14 @@ module.exports = {
                     await interaction.reply({ content: `There was an error executing command: ${command.name}`, ephemeral: true });
                 }
                 break;
-            case interaction.isButton():
-                switch (interaction.message.content) {
-                    case "Blackjack":
-                        interaction.deferUpdate();
-                        BlackjackGame.buttonInteraction(interaction);
-                        break;
-                    default:
-                        // interaction.update({ content: `Sorry, something went wrong`, ephemeral: true });
-                        break;
-                }
-                break;
+            // case interaction.isButton():
+            //     switch (interaction.message.content) {
+            //         case "Blackjack":
+            //             break;
+            //         default:
+            //             break;
+            //     }
+            //     break;
             case interaction.isSelectMenu():
                 console.log(interaction);
                 break;
