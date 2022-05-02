@@ -1,4 +1,4 @@
-const { Hand } = require('../db/models');
+const { Blackjack, Hand, Player, User } = require('../db/models');
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 
 const SUITS = ["♠", "♣", "♥", "♦"];
@@ -9,12 +9,12 @@ const row = new MessageActionRow()
             .setCustomId('hit')
             .setLabel('Hit')
             .setStyle('SUCCESS'),
-            // .setDisabled(true),
+        // .setDisabled(true),
         new MessageButton()
             .setCustomId('stay')
             .setLabel('Stay')
             .setStyle('DANGER'),
-            // .setDisabled(true),
+        // .setDisabled(true),
         // new MessageButton()
         //     .setCustomId('split')
         //     .setLabel('Split')
@@ -24,7 +24,7 @@ const row = new MessageActionRow()
             .setCustomId('double')
             .setLabel('Double')
             .setStyle('PRIMARY'),
-            // .setDisabled(true)
+        // .setDisabled(true)
     );
 
 class BlackjackGame {
@@ -33,6 +33,32 @@ class BlackjackGame {
         this.client = client;
         this.deck;
         this.startGame();
+    }
+
+    static buttonInteraction(interaction) {
+        Promise.all([
+            Blackjack.findOne({ where: { guild: interaction.guildId, channel: interaction.channelId } }),
+            User.findOne({ where: { username: interaction.user.tag, guild: interaction.guildId } })
+        ]).then(([table, user]) => {
+            Player.findOne({ where: { tableId: table.id, UserId: user.id } })
+                .then(player => {
+                    console.log(`Player interaction ${interaction.customId}`);
+                    switch (interaction.customId) {
+                        case "hit":
+                            Hand.create({ PlayerId: player.id, card: this.deck.draw().toString() });
+                            BlackjackGame.updateHands([player], table).then(embeds => interaction.update({ embeds: embeds }));
+                            break;
+                        case "stay":
+                            break;
+                        case "double":
+                            Hand.create({ PlayerId: player.id, card: this.deck.draw().toString() })
+                            break;
+                        default:
+                            break;
+                    }
+                })
+        })
+            .catch(err => console.log(err));
     }
 
     async startGame() {
@@ -49,8 +75,8 @@ class BlackjackGame {
 
         let channel = this.client.channels.cache.get(this.table.channel);
         let message = await channel.send(`Blackjack`);
-        await this.updateHands(players, message);
-        message.edit({ components: [row] });
+        let embeds = await BlackjackGame.updateHands(players, this.table);
+        message.edit({ embeds: embeds, components: [row] });
     }
 
     deal(players) {
@@ -66,11 +92,11 @@ class BlackjackGame {
         Hand.create({ BlackjackId: this.table.id, card: this.deck.draw().toString() });
     }
 
-    async updateHands(players, message) {
+    static async updateHands(players, table) {
         let embeds = [];
-        let dealerCards = await this.table.getHands()
+        let dealerCards = await table.getHands()
         let dealerEmbed = new MessageEmbed()
-                    .setTitle("Dealer Hand");
+            .setTitle("Dealer Hand");
 
         dealerCards.forEach((hand, index) => {
             dealerEmbed.addFields({ name: `\u200b`, value: `${index == 0 ? "🂠" : hand.card}`, inline: true });
@@ -91,7 +117,7 @@ class BlackjackGame {
             embeds.push(playerEmbed);
         }));
 
-        message.edit({ embeds: embeds });
+        return embeds;
     }
 }
 

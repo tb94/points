@@ -1,4 +1,5 @@
 const { User } = require("../db/models");
+const { BlackjackGame } = require("../games/blackjack");
 
 module.exports = {
 	name: 'interactionCreate',
@@ -21,10 +22,13 @@ module.exports = {
                 }
                 break;
             case interaction.isButton():
-                switch (interaction.message?.interaction?.commandName) {
-                    case "blackjack":
+                switch (interaction.message.content) {
+                    case "Blackjack":
+                        interaction.deferUpdate();
+                        BlackjackGame.buttonInteraction(interaction);
+                        break;
                     default:
-                        interaction.update({ content: `Thank you for pressing ${interaction.customId}` });
+                        // interaction.update({ content: `Sorry, something went wrong`, ephemeral: true });
                         break;
                 }
                 break;
