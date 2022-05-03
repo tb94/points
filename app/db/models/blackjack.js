@@ -14,8 +14,8 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
-            Blackjack.Players = Blackjack.hasMany(models.Player, { foreignKey: 'tableId', onDelete: 'CASCADE' });
-            Blackjack.Dealer = Blackjack.hasMany(models.Hand, { onDelete: 'CASCADE' });
+            Blackjack.hasMany(models.Player, { foreignKey: 'tableId', onDelete: 'CASCADE' });
+            Blackjack.hasMany(models.Hand, { onDelete: 'CASCADE' });
         }
 
         async startGame() {

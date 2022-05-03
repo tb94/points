@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 const { User, Player, Blackjack, Hand } = require('../db/models');
+const { Op } = require('sequelize');
 
 const row = new MessageActionRow()
     .addComponents(
@@ -9,10 +10,10 @@ const row = new MessageActionRow()
             .setLabel('Hit')
             .setStyle('SUCCESS'),
         // .setDisabled(true),
-        // new MessageButton()
-        //     .setCustomId('stay')
-        //     .setLabel('Stay')
-        //     .setStyle('DANGER'),
+        new MessageButton()
+            .setCustomId('stay')
+            .setLabel('Stay')
+            .setStyle('DANGER'),
         // .setDisabled(true),
         // new MessageButton()
         //     .setCustomId('split')
@@ -68,6 +69,12 @@ module.exports = {
         let tableMessage = await interaction.followUp({ content: "\u200b", embeds: embeds, components: [row] })
         let collector = tableMessage.createMessageComponentCollector({ componentType: 'BUTTON', time: (30 * 1000) });
 
+        players.forEach(player => {
+            player.reload().then(p => p.handValue != 21 ? null : p.getUser()
+                .then(u => interaction.guild.members.find(m => m.user.tag === u.username))
+                .then(u => tableMessage.reply({ content: `${u} got Blackjack!` })));
+        });
+
         collector.on('collect', i => {
             collector.resetTimer();
             User.findOne({ where: { username: i.user.tag, guild: i.guildId } })
@@ -76,19 +83,27 @@ module.exports = {
                     if (p.handValue >= 21) throw new Error(`You already ${p.handValue === 21 ? "have 21" : "busted"}!`);
                     switch (i.customId) {
                         case 'hit':
-                            return Hand.create({ PlayerId: p.id, card: table.deck.draw().toString() }).then(() => p.handValue);
+                            if (p.stay) throw new Error(`You already clicked stay`);
+                            return Hand.create({ PlayerId: p.id, card: table.deck.draw().toString() })
+                                .then(() => p.reload())
+                        case 'stay':
+                            return p.update({ stay: true });
                         default:
                             throw new Error("Can't do that yet");
                     }
                 })
-                .then(handValue => {
-                    let response;
-                    if (handValue > 21) response = "You busted!";
-                    else respose = `You have ${handValue}`;
-                    return i.reply({ content: `${i.user} ${response}`, ephemeral: true })
-                })
+                .then((p) => i.reply({ content: `${i.user} ${p.handValue > 21 ? "You busted!" : "You have " + p.handValue}`, ephemeral: true }))
+                // update table embed
                 .then(() => table.getHandEmbeds())
                 .then(embeds => tableMessage.edit({ embeds: embeds }))
+                // check if everyone has finished or busted
+                .then(() => Player.findAll({ where: { tableId: table.id } }))
+                .then(all => {
+                    let done = all.filter(p => p.handValue >= 21).length;
+                    let stayed = all.filter(p => p.stay).length;
+                    console.log(`${stayed} players stayed; ${done} players busted or 21; ${all.length} players total`);
+                    if (stayed + done >= all.length) collector.stop();
+                })
                 .catch(err => i.reply({ content: err.message, ephemeral: true }));
         });
 
@@ -103,7 +118,8 @@ module.exports = {
                 // dealer hits until 17
                 // payout
                 // delete blackjack instance
-                .then(() => table.destroy());
+                .then(() => table.destroy({ force: true }))
+                .catch(console.log);
         })
     }
 }

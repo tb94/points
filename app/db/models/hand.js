@@ -9,8 +9,8 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      Hand.Player = Hand.belongsTo(models.Player);
-      Hand.Dealer = Hand.belongsTo(models.Blackjack)
+      Hand.belongsTo(models.Player);
+      Hand.belongsTo(models.Blackjack)
     }
   };
 
