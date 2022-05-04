@@ -49,9 +49,12 @@ module.exports = {
         let [player, newPlayer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
 
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
-        else if (!newTable) return interaction.reply({ content: `${interaction.user} joined blackjack!` });
+        interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} blackjack with ${player.bet} 💰 bet!` });
 
-        await interaction.reply({ content: `${interaction.user} started a round of blackjack! Use /blackjack to join.` });
+        if (!newTable) return;
+
+        // game logic starts here
+
         while (table.startTime.getTime() >= Date.now()) {
             await new Promise((resolve) => { setTimeout(resolve, 1250) });
         }
@@ -73,7 +76,8 @@ module.exports = {
         players.forEach(p => p.reload().then(() => {
             p.getUser()
                 .then(u => {
-                    if (u) u.decrement({ balance: p.bet });
+                    if (!u) return;
+                    u.decrement({ balance: p.bet });
 
                     if (p.handValue == 21) interaction.guild.fetch()
                         .then(g => g.members.cache.find(m => m.user.tag === u.username))
@@ -129,7 +133,9 @@ module.exports = {
                 // dealer hits until 17
                 .then(() => dealerPlay(dealer, table, tableMessage))
                 // payout
-                .then(() => payout(dealer, table, tableMessage))
+                .then(() => interaction.guild.fetch())
+                .then(g => g.members.cache)
+                .then(members => payout(dealer, table, members, tableMessage))
                 // delete blackjack instance
                 .then(() => table.destroy({ force: true }))
                 .catch(console.log);
@@ -146,18 +152,33 @@ async function dealerPlay(dealer, table, tableMessage) {
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
-    return tableMessage.reply({ content: `Dealer ${dealer.handValue > 21 ? "busted" : "has " + dealer.handValue}` });
+    let reply = "Dealer ";
+    if (dealer.handValue == 21 && dealer.Hands.length == 2) reply += "has Blackjack!";
+    else if (dealer.handValue > 21) reply += "busted!";
+    else reply += `has ${dealer.handValue}!`;
+    return tableMessage.reply({ content: reply });
 }
 
-async function payout(dealer, table, tableMessage) {
+async function payout(dealer, table, guildMembers, tableMessage) {
     let players = await table.getPlayers()
     for (let player of players) {
         await player.reload();
         let user = await player.getUser();
         if (!user) continue;
+
+        let winnings = 0;
+        let member = guildMembers.find(m => m.user.tag === user.username);
+
+        // bust or lose
         if (player.handValue > 21 || (dealer.handValue <= 21 && player.handValue < dealer.handValue)) continue;
-        else if (player.handValue == dealer.handValue) await user.increment({balance: player.bet });
-        else if (player.handValue == 21 && player.Hands.length == 2) await user.increment({ balance: Math.ceil(player.bet * 3 / 2) + player.bet });
-        else if (player.handValue > dealer.handValue || dealer.handValue > 21) await user.increment({ balance: player.bet + player.bet });
+        // push
+        else if (player.handValue == dealer.handValue) winnings = 0;
+        // blackjack
+        else if (player.handValue == 21 && player.Hands.length == 2) winnings = Math.ceil(player.bet * 3 / 2);
+        // other win
+        else if (player.handValue > dealer.handValue || dealer.handValue > 21) winnings = player.bet;
+
+        await user.increment({balance: winnings + player.bet });
+        await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
     }
 }
