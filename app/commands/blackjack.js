@@ -71,16 +71,19 @@ module.exports = {
         let collector = tableMessage.createMessageComponentCollector({ componentType: 'BUTTON', time: (30 * 1000) });
 
         players.forEach(p => p.reload().then(() => {
-                if (p.handValue != 21) return;
-                p.getUser()
-                    .then(u => {
-                        if (!u) return tableMessage.reply({ content: "Dealer got Blackjack!" }).then(() => collector.stop());
-                        interaction.guild.fetch()
+            p.getUser()
+                .then(u => {
+                    if (u) u.decrement({ balance: p.bet });
+
+                    if (p.handValue == 21) interaction.guild.fetch()
                         .then(g => g.members.cache.find(m => m.user.tag === u.username))
-                        .then(m => tableMessage.reply({ content: `${m.user} got Blackjack!` }));
-                    });
-                p.update({ stay: true });
-            }));
+                        .then(m => tableMessage.reply({ content: `${m.user} got Blackjack!` }))
+                        .then(() => p.update({ stay: true }));
+                });
+        }));
+
+        if (dealer.handValue == 21)
+            tableMessage.reply({ content: "Dealer got Blackjack!" }).then(() => collector.stop());
 
         collector.on('collect', i => {
             collector.resetTimer();
@@ -92,7 +95,7 @@ module.exports = {
                             if (p.handValue >= 21) throw new Error(`You already ${p.handValue === 21 ? "have 21" : "busted"}!`);
                             if (p.stay) throw new Error(`You already clicked stay`);
                             return Hand.create({ PlayerId: p.id, card: table.deck.draw().toString() })
-                                .then(() => p.update({ stay: p.handValue >= 21}))
+                                .then(() => p.update({ stay: p.handValue >= 21 }))
                                 .then(() => p.reload())
                         case 'stand':
                             return p.update({ stay: true });
@@ -109,7 +112,7 @@ module.exports = {
                 .then(all => {
                     let done = all.filter(p => p.handValue >= 21 || p.stay).length;
                     let busted = all.filter(p => p.handValue > 21).length;
-                    if (busted >= all.length -1) dealer.update({ stay: true });
+                    if (busted >= all.length - 1) dealer.update({ stay: true });
                     if (done >= all.length - 1) collector.stop();
                 })
                 .catch(err => i.reply({ content: err.message, ephemeral: true }));
@@ -143,7 +146,7 @@ async function dealerPlay(dealer, table, tableMessage) {
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
-    return tableMessage.reply({ content: `Dealer ${dealer.handValue > 21 ? "busted" : "has " + dealer.handValue}`});
+    return tableMessage.reply({ content: `Dealer ${dealer.handValue > 21 ? "busted" : "has " + dealer.handValue}` });
 }
 
 async function payout(dealer, table, tableMessage) {
@@ -152,9 +155,9 @@ async function payout(dealer, table, tableMessage) {
         await player.reload();
         let user = await player.getUser();
         if (!user) continue;
-        if (player.handValue > 21 || (dealer.handValue <= 21 && player.handValue < dealer.handValue)) await user.decrement({ balance: player.bet });
-        else if (player.handValue == dealer.handValue) continue;
-        else if (player.handValue == 21 && player.Hands.length == 2) await user.increment({ balance: Math.ceil(player.bet * 3 / 2) });
-        else if (player.handValue > dealer.handValue) await user.increment({ balance: player.bet });
+        if (player.handValue > 21 || (dealer.handValue <= 21 && player.handValue < dealer.handValue)) continue;
+        else if (player.handValue == dealer.handValue) await user.increment({balance: player.bet });
+        else if (player.handValue == 21 && player.Hands.length == 2) await user.increment({ balance: Math.ceil(player.bet * 3 / 2) + player.bet });
+        else if (player.handValue > dealer.handValue || dealer.handValue > 21) await user.increment({ balance: player.bet + player.bet });
     }
 }
