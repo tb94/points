@@ -181,7 +181,8 @@ async function payout(dealer, table, guildMembers, tableMessage) {
         else if (player.handValue > dealer.handValue || dealer.handValue > 21) winnings = player.bet;
 
         await user.increment({ balance: winnings + player.bet });
-        await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
+        if (winnings > player.bet)
+            await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
     }
 }
 
