@@ -56,10 +56,9 @@ module.exports = {
             await new Promise((resolve) => { setTimeout(resolve, 1250) });
         }
 
-        let [dealer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: null }, defaults: { position: 0 }});
+        let [dealer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: null }, defaults: { position: 0 } });
         let players = await table.getPlayers();
         players.sort((p1, p2) => p1.position - p2.position);
-        players.forEach(p => console.log(p.bet));
 
         // deal hands
         players.forEach(player => Hand.create({ PlayerId: player.id, card: table.deck.draw().toString() }));
@@ -71,14 +70,17 @@ module.exports = {
         let tableMessage = await interaction.followUp({ content: "\u200b", embeds: embeds, components: [row] })
         let collector = tableMessage.createMessageComponentCollector({ componentType: 'BUTTON', time: (30 * 1000) });
 
-        // this is broken
-
-        players.forEach(p => {
-            if (!p.equals({ other: dealer })) return p.reload().then(p => p.handValue != 21 ? null : p.getUser()
-                .then(u => interaction.guild.fetch()
-                    .then(g => g.members.cache.find(m => m.user.tag === u.username))
-                    .then(u => tableMessage.reply({ content: `${u} got Blackjack!` }))));
-        });
+        players.forEach(p => p.reload().then(() => {
+                if (p.handValue != 21) return;
+                p.getUser()
+                    .then(u => {
+                        if (!u) return tableMessage.reply({ content: "Dealer got Blackjack!" }).then(() => collector.stop());
+                        interaction.guild.fetch()
+                        .then(g => g.members.cache.find(m => m.user.tag === u.username))
+                        .then(m => tableMessage.reply({ content: `${m.user} got Blackjack!` }));
+                    });
+                p.update({ stay: true });
+            }));
 
         collector.on('collect', i => {
             collector.resetTimer();
@@ -90,6 +92,7 @@ module.exports = {
                             if (p.handValue >= 21) throw new Error(`You already ${p.handValue === 21 ? "have 21" : "busted"}!`);
                             if (p.stay) throw new Error(`You already clicked stay`);
                             return Hand.create({ PlayerId: p.id, card: table.deck.draw().toString() })
+                                .then(() => p.update({ stay: p.handValue >= 21}))
                                 .then(() => p.reload())
                         case 'stand':
                             return p.update({ stay: true });
@@ -104,9 +107,10 @@ module.exports = {
                 // check if everyone has finished or busted
                 .then(() => Player.findAll({ where: { tableId: table.id } }))
                 .then(all => {
-                    let done = all.filter(p => p.handValue >= 21).length;
-                    let stayed = all.filter(p => p.stay).length;
-                    if (stayed + done >= all.length - 1) collector.stop();
+                    let done = all.filter(p => p.handValue >= 21 || p.stay).length;
+                    let busted = all.filter(p => p.handValue > 21).length;
+                    if (busted >= all.length -1) dealer.update({ stay: true });
+                    if (done >= all.length - 1) collector.stop();
                 })
                 .catch(err => i.reply({ content: err.message, ephemeral: true }));
         });
@@ -122,6 +126,7 @@ module.exports = {
                 // dealer hits until 17
                 .then(() => dealerPlay(dealer, table, tableMessage))
                 // payout
+                .then(() => payout(dealer, table, tableMessage))
                 // delete blackjack instance
                 .then(() => table.destroy({ force: true }))
                 .catch(console.log);
@@ -130,13 +135,26 @@ module.exports = {
 }
 
 async function dealerPlay(dealer, table, tableMessage) {
-    console.log(dealer);
-    while (dealer.handValue <= 16) {
+    while (dealer.handValue <= 16 && !dealer.stay) {
         console.log(`dealer has ${dealer.handValue}`);
         await Hand.create({ PlayerId: dealer.id, card: table.deck.draw().toString() })
-            .then(() => console.log(`\nDealer hit on ${dealer.handValue}\n`))
             .then(() => dealer.reload())
+            .then(() => new Promise((resolve) => setTimeout(resolve, 2000)))
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
+    }
+    return tableMessage.reply({ content: `Dealer ${dealer.handValue > 21 ? "busted" : "has " + dealer.handValue}`});
+}
+
+async function payout(dealer, table, tableMessage) {
+    let players = await table.getPlayers()
+    for (let player of players) {
+        await player.reload();
+        let user = await player.getUser();
+        if (!user) continue;
+        if (player.handValue > 21 || (dealer.handValue <= 21 && player.handValue < dealer.handValue)) await user.decrement({ balance: player.bet });
+        else if (player.handValue == dealer.handValue) continue;
+        else if (player.handValue == 21 && player.Hands.length == 2) await user.increment({ balance: Math.ceil(player.bet * 3 / 2) });
+        else if (player.handValue > dealer.handValue) await user.increment({ balance: player.bet });
     }
 }

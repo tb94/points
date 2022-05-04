@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
                 let embed = new MessageEmbed();
 
                 if (!user) {
-                    embed.setTitle("Dealer Hand");
+                    embed.setTitle("Dealer");
                     hands.forEach((hand, index) => embed.addFields({ name: `\u200b`, value: `${index == 0 && !show ? "🂠" : hand.card}`, inline: true }));
                 } else {
                     embed.setTitle(`${user.username.split('#')[0]}`);
