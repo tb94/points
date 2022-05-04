@@ -10,8 +10,8 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             Player.belongsTo(models.User);
             Player.belongsTo(models.Blackjack, { foreignKey: 'tableId' });
-            Player.hasMany(models.Hand, { onDelete: 'CASCADE' });
-            Player.addScope('defaultScope', { include: models.Hand });
+            Player.hasMany(models.Card, { onDelete: 'CASCADE' });
+            Player.addScope('defaultScope', { include: models.Card });
         }
     };
 
@@ -23,12 +23,11 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.VIRTUAL,
             get() {
                 let total = 0;
-                this.Hands.forEach(h => {
-                    let cardValue = h.card.substring(0, h.card.length - 1);
-                    if (!isNaN(cardValue)) return total += parseInt(cardValue);
-                    if (cardValue !== "A") return total += 10;
+                this.Cards.forEach(c => {
+                    if (c.isAce()) return;
+                    total += (c.isFace() ? 10 : parseInt(c.value));
                 })
-                let aces = this.Hands.filter(h => h.card.charAt(0) === "A");
+                let aces = this.Cards.filter(c => c.isAce());
                 for (let i = aces.length; i > 0; i--) {
                     if (total + (i * 11) <= 21) {
                         total += i * 11;
@@ -37,7 +36,6 @@ module.exports = (sequelize, DataTypes) => {
                     total++;
                 }
                 return total;
-                // });
             }
         }
     }, {

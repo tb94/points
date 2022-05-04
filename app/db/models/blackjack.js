@@ -21,25 +21,25 @@ module.exports = (sequelize, DataTypes) => {
             this.deck = new Deck();
             this.deck.shuffle();
         }
-        
+
         async getHandEmbeds(show = false) {
             let embeds = [];
             let players = await this.getPlayers()
 
             for (let player of players) {
                 let user = await player.getUser();
-                let hands = await player.getHands();
+                let cards = await player.getCards();
                 let embed = new MessageEmbed();
 
                 if (!user) {
                     embed.setTitle("Dealer");
-                    hands.forEach((hand, index) => embed.addFields({ name: `\u200b`, value: `${index == 0 && !show ? "🂠" : hand.card}`, inline: true }));
+                    cards.forEach((card, index) => embed.addFields({ name: `\u200b`, value: `${index == 0 && !show ? "🂠" : card.value + card.suit}`, inline: true }));
                 } else {
                     embed.setTitle(`${user.username.split('#')[0]}`);
-                    hands.forEach(hand => embed.addFields({ name: "\u200b", value: hand.card, inline: true }));
+                    cards.forEach(card => embed.addFields({ name: "\u200b", value: card.value + card.suit, inline: true }));
                 }
                 embeds.unshift(embed);
-            }    
+            }
             return embeds;
         }
     };

@@ -1,7 +1,7 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    class User extends Model {
+    class Card extends Model {
         /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
@@ -9,25 +9,27 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
-            User.hasOne(models.Player);
+            Card.belongsTo(models.Player);
+            Card.belongsTo(models.Blackjack)
+        }
+
+        isAce() {
+            return this.value === "A";
+        }
+
+        isFace() {
+            return ["J", "Q", "K"].includes(this.value);
         }
     };
 
-    User.init({
-        username: DataTypes.STRING,
-        guild: DataTypes.STRING,
-        balance: {
-            type: DataTypes.INTEGER,
-            defaultValue: 0,
-            allowNull: false
-        },
-        voiceActivity: DataTypes.DATE
+    Card.init({
+        value: DataTypes.STRING,
+        suit: DataTypes.STRING
     }, {
         sequelize,
         timestamps: false,
-        modelName: 'User',
-        indexes: [{ unique: true, fields: ['username', 'guild'] }]
+        modelName: 'Card',
     });
 
-    return User;
+    return Card;
 };

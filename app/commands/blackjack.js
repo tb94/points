@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
-const { User, Player, Blackjack, Hand } = require('../db/models');
+const { User, Player, Blackjack, Card } = require('../db/models');
 const { Op } = require('sequelize');
 
 const row = new MessageActionRow()
@@ -30,7 +30,7 @@ const row = new MessageActionRow()
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('blackjack')
-        .setDescription('Single Deck; Dealer stands on all 17s; Blackjack pays 3:2')
+        .setDescription('Single Deck; Dealer stands on 17 ; Blackjack pays 3:2')
         .addIntegerOption(o => o
             .setName('points')
             .setRequired(true)
@@ -64,8 +64,9 @@ module.exports = {
         players.sort((p1, p2) => p1.position - p2.position);
 
         // deal hands
-        players.forEach(player => Hand.create({ PlayerId: player.id, card: table.deck.draw().toString() }));
-        players.forEach(player => Hand.create({ PlayerId: player.id, card: table.deck.draw().toString() }));
+        await dealCards(table);
+        await dealCards(table);
+
         dealer.reload();
 
         let embeds = await table.getHandEmbeds();
@@ -98,7 +99,8 @@ module.exports = {
                         case 'hit':
                             if (p.handValue >= 21) throw new Error(`You already ${p.handValue === 21 ? "have 21" : "busted"}!`);
                             if (p.stay) throw new Error(`You already clicked stay`);
-                            return Hand.create({ PlayerId: p.id, card: table.deck.draw().toString() })
+                            let c = table.deck.draw().toString();
+                            return Card.create({ PlayerId: p.id, value: c.substring(0, c.length - 1), suit: c.slice(-1) })
                                 .then(() => p.update({ stay: p.handValue >= 21 }))
                                 .then(() => p.reload())
                         case 'stand':
@@ -145,15 +147,15 @@ module.exports = {
 
 async function dealerPlay(dealer, table, tableMessage) {
     while (dealer.handValue <= 16 && !dealer.stay) {
-        console.log(`dealer has ${dealer.handValue}`);
-        await Hand.create({ PlayerId: dealer.id, card: table.deck.draw().toString() })
+        let c = table.deck.draw().toString();
+        await Card.create({ PlayerId: dealer.id, value: c.substring(0, c.length - 1), suit: c.slice(-1) })
             .then(() => dealer.reload())
             .then(() => new Promise((resolve) => setTimeout(resolve, 2000)))
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
     let reply = "Dealer ";
-    if (dealer.handValue == 21 && dealer.Hands.length == 2) reply += "has Blackjack!";
+    if (dealer.handValue == 21 && dealer.Cards.length == 2) reply += "has Blackjack!";
     else if (dealer.handValue > 21) reply += "busted!";
     else reply += `has ${dealer.handValue}!`;
     return tableMessage.reply({ content: reply });
@@ -174,11 +176,21 @@ async function payout(dealer, table, guildMembers, tableMessage) {
         // push
         else if (player.handValue == dealer.handValue) winnings = 0;
         // blackjack
-        else if (player.handValue == 21 && player.Hands.length == 2) winnings = Math.ceil(player.bet * 3 / 2);
+        else if (player.handValue == 21 && player.Cards.length == 2) winnings = Math.ceil(player.bet * 3 / 2);
         // other win
         else if (player.handValue > dealer.handValue || dealer.handValue > 21) winnings = player.bet;
 
-        await user.increment({balance: winnings + player.bet });
+        await user.increment({ balance: winnings + player.bet });
         await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
+    }
+}
+
+async function dealCards(table) {
+    let players = await table.getPlayers();
+
+    for (let player of players) {
+        let card = table.deck.draw().toString();
+        await Card.create({ PlayerId: player.id, value: card.substring(0, card.length -1), suit: card.slice(-1) });
+        await player.reload();
     }
 }
