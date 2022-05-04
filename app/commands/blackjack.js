@@ -30,7 +30,7 @@ const row = new MessageActionRow()
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('blackjack')
-        .setDescription('Dealer hits on soft 17; Blackjack pays 3:2')
+        // .setDescription('Dealer stands on soft 17; Blackjack pays 3:2')
         .addIntegerOption(o => o
             .setName('points')
             .setRequired(true)
@@ -43,10 +43,10 @@ module.exports = {
         let [user] = await User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
         if (user.balance < bet) return interaction.reply({ content: "You don't have that many points!", ephemeral: true });
 
-        let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId } });
+        let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: Player });
         if (table.startTime.getTime() < Date.now()) return interaction.reply({ content: "A game is already in session, wait for the next hand", ephemeral: true });
 
-        let [player, newPlayer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: user.id }, defaults: { bet: bet } });
+        let [player, newPlayer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
 
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
         else if (!newTable) return interaction.reply({ content: `${interaction.user} joined blackjack!` });
@@ -56,23 +56,28 @@ module.exports = {
             await new Promise((resolve) => { setTimeout(resolve, 1250) });
         }
 
-        // add player order here
+        let [dealer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: null }, defaults: { position: 0 }});
         let players = await table.getPlayers();
+        players.sort((p1, p2) => p1.position - p2.position);
+        players.forEach(p => console.log(p.bet));
+
         // deal hands
-        players.forEach(player => { Hand.create({ PlayerId: player.id, card: table.deck.draw().toString() }) });
-        Hand.create({ BlackjackId: table.id, card: table.deck.draw().toString() });
-        players.forEach(player => { Hand.create({ PlayerId: player.id, card: table.deck.draw().toString() }) });
-        Hand.create({ BlackjackId: table.id, card: table.deck.draw().toString() });
+        players.forEach(player => Hand.create({ PlayerId: player.id, card: table.deck.draw().toString() }));
+        players.forEach(player => Hand.create({ PlayerId: player.id, card: table.deck.draw().toString() }));
+        dealer.reload();
 
         let embeds = await table.getHandEmbeds();
         row.components.forEach(button => button.setDisabled(false));
         let tableMessage = await interaction.followUp({ content: "\u200b", embeds: embeds, components: [row] })
         let collector = tableMessage.createMessageComponentCollector({ componentType: 'BUTTON', time: (30 * 1000) });
 
-        players.forEach(player => {
-            player.reload().then(p => p.handValue != 21 ? null : p.getUser()
-                .then(u => interaction.guild.members.find(m => m.user.tag === u.username))
-                .then(u => tableMessage.reply({ content: `${u} got Blackjack!` })));
+        // this is broken
+
+        players.forEach(p => {
+            if (!p.equals({ other: dealer })) return p.reload().then(p => p.handValue != 21 ? null : p.getUser()
+                .then(u => interaction.guild.fetch()
+                    .then(g => g.members.cache.find(m => m.user.tag === u.username))
+                    .then(u => tableMessage.reply({ content: `${u} got Blackjack!` }))));
         });
 
         collector.on('collect', i => {
@@ -80,9 +85,9 @@ module.exports = {
             User.findOne({ where: { username: i.user.tag, guild: i.guildId } })
                 .then(u => Player.findOne({ where: { tableId: table.id, UserId: u.id } }))
                 .then(p => {
-                    if (p.handValue >= 21) throw new Error(`You already ${p.handValue === 21 ? "have 21" : "busted"}!`);
                     switch (i.customId) {
                         case 'hit':
+                            if (p.handValue >= 21) throw new Error(`You already ${p.handValue === 21 ? "have 21" : "busted"}!`);
                             if (p.stay) throw new Error(`You already clicked stay`);
                             return Hand.create({ PlayerId: p.id, card: table.deck.draw().toString() })
                                 .then(() => p.reload())
@@ -101,8 +106,7 @@ module.exports = {
                 .then(all => {
                     let done = all.filter(p => p.handValue >= 21).length;
                     let stayed = all.filter(p => p.stay).length;
-                    console.log(`${stayed} players stayed; ${done} players busted or 21; ${all.length} players total`);
-                    if (stayed + done >= all.length) collector.stop();
+                    if (stayed + done >= all.length - 1) collector.stop();
                 })
                 .catch(err => i.reply({ content: err.message, ephemeral: true }));
         });
@@ -116,10 +120,23 @@ module.exports = {
             // flip dealer card
             table.getHandEmbeds(true).then(embeds => tableMessage.edit({ components: [row], embeds: embeds }))
                 // dealer hits until 17
+                .then(() => dealerPlay(dealer, table, tableMessage))
                 // payout
                 // delete blackjack instance
                 .then(() => table.destroy({ force: true }))
                 .catch(console.log);
         })
+    }
+}
+
+async function dealerPlay(dealer, table, tableMessage) {
+    console.log(dealer);
+    while (dealer.handValue <= 16) {
+        console.log(`dealer has ${dealer.handValue}`);
+        await Hand.create({ PlayerId: dealer.id, card: table.deck.draw().toString() })
+            .then(() => dealer.reload())
+            .then(() => console.log(`\nDealer hit on ${dealer.handValue}\n`))
+            .then(() => table.getHandEmbeds(true))
+            .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
 }

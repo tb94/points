@@ -15,7 +15,6 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             // define association here
             Blackjack.hasMany(models.Player, { foreignKey: 'tableId', onDelete: 'CASCADE' });
-            // Blackjack.hasMany(models.Hand, { onDelete: 'CASCADE' });
         }
 
         async startGame() {
@@ -32,14 +31,14 @@ module.exports = (sequelize, DataTypes) => {
                 let hands = await player.getHands();
                 let embed = new MessageEmbed();
 
-                if (user == null) {
+                if (!user) {
                     embed.setTitle("Dealer Hand");
                     hands.forEach((hand, index) => embed.addFields({ name: `\u200b`, value: `${index == 0 && !show ? "🂠" : hand.card}`, inline: true }));
                 } else {
                     embed.setTitle(`${user.username.split('#')[0]}`);
                     hands.forEach(hand => embed.addFields({ name: "\u200b", value: hand.card, inline: true }));
                 }
-                embeds.push(embed);
+                embeds.unshift(embed);
             }    
             return embeds;
         }
