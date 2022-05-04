@@ -9,22 +9,10 @@ const row = new MessageActionRow()
             .setCustomId('hit')
             .setLabel('Hit')
             .setStyle('SUCCESS'),
-        // .setDisabled(true),
         new MessageButton()
             .setCustomId('stand')
             .setLabel('Stand')
-            .setStyle('DANGER'),
-        // .setDisabled(true),
-        // new MessageButton()
-        //     .setCustomId('split')
-        //     .setLabel('Split')
-        //     .setStyle('SECONDARY')
-        //     .setDisabled(true),
-        // new MessageButton()
-        //     .setCustomId('double')
-        //     .setLabel('Double')
-        //     .setStyle('PRIMARY'),
-        // .setDisabled(true)
+            .setStyle('DANGER')
     );
 
 module.exports = {
