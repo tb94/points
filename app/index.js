@@ -7,7 +7,7 @@ const { Op } = require('sequelize');
 
 console.log(env);
 // Keep DB in sync
-sequelize.sync({ force: env === 'development' });
+sequelize.sync(env === 'development' ? { force: true } : { alter: true });
 
 // Create a new client instance
 const client = new Client({

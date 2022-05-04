@@ -1,4 +1,4 @@
-const { User, sequelize } = require('../db/models');
+const { User, Blackjack, sequelize, Op } = require('../db/models');
 const { Collection, OAuth2Guild } = require('discord.js');
 
 module.exports = {
@@ -14,7 +14,7 @@ module.exports = {
         //     .then(members => {
         //         return Promise.all(members.filter(m => !m.user.bot).map(async (member) => {
         //             return User.findCreateFind({
-        //                 where: { username: member.user.tag, guild: member.guild.id }
+        //                 where: { username: member.user.tag, guild: member.guild.id, balance: 1000 }
         //             });
         //         }));
         //     })
@@ -30,6 +30,8 @@ module.exports = {
         //         });
         //     }));
         // }));
+
+        client.user.setPresence({ activities: [{ name: 'Keeping score', type: 'CUSTOM' }]});
         console.log(`Ready! Logged in as ${client.user.tag}`);
     },
 };
