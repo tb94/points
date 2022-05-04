@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             // define association here
             Blackjack.hasMany(models.Player, { foreignKey: 'tableId', onDelete: 'CASCADE' });
-            Blackjack.hasMany(models.Hand, { onDelete: 'CASCADE' });
+            // Blackjack.hasMany(models.Hand, { onDelete: 'CASCADE' });
         }
 
         async startGame() {
@@ -25,30 +25,22 @@ module.exports = (sequelize, DataTypes) => {
         
         async getHandEmbeds(show = false) {
             let embeds = [];
-            let dealerCards = await this.getHands()
-            let dealerEmbed = new MessageEmbed()
-                .setTitle("Dealer Hand");
-    
-            dealerCards.forEach((hand, index) => {
-                dealerEmbed.addFields({ name: `\u200b`, value: `${index == 0 && !show ? "🂠" : hand.card}`, inline: true });
-            });
-            embeds.push(dealerEmbed);
-    
-            let players = await this.getPlayers();
+            let players = await this.getPlayers()
 
-            await Promise.all(players.map(async (player) => {
+            for (let player of players) {
                 let user = await player.getUser();
-                let playerCards = await player.getHands();
-                let playerEmbed = new MessageEmbed()
-                    .setTitle(`${user.username.split('#')[0]}`);
-    
-                playerCards.forEach(hand => {
-                    playerEmbed.addFields({ name: "\u200b", value: `${hand.card}`, inline: true });
-                });
-    
-                embeds.push(playerEmbed);
-            }));
-    
+                let hands = await player.getHands();
+                let embed = new MessageEmbed();
+
+                if (user == null) {
+                    embed.setTitle("Dealer Hand");
+                    hands.forEach((hand, index) => embed.addFields({ name: `\u200b`, value: `${index == 0 && !show ? "🂠" : hand.card}`, inline: true }));
+                } else {
+                    embed.setTitle(`${user.username.split('#')[0]}`);
+                    hands.forEach(hand => embed.addFields({ name: "\u200b", value: hand.card, inline: true }));
+                }
+                embeds.push(embed);
+            }    
             return embeds;
         }
     };

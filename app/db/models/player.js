@@ -25,9 +25,8 @@ module.exports = (sequelize, DataTypes) => {
                 let total = 0;
                 this.Hands.forEach(h => {
                     let cardValue = h.card.substring(0, h.card.length - 1);
-                    if (cardValue === "A") return;
                     if (!isNaN(cardValue)) return total += parseInt(cardValue);
-                    return total += 10;
+                    if (cardValue !== "A") return total += 10;
                 })
                 let aces = this.Hands.filter(h => h.card.charAt(0) === "A");
                 for (let i = aces.length; i > 0; i--) {
