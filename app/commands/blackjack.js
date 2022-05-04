@@ -11,8 +11,8 @@ const row = new MessageActionRow()
             .setStyle('SUCCESS'),
         // .setDisabled(true),
         new MessageButton()
-            .setCustomId('stay')
-            .setLabel('Stay')
+            .setCustomId('stand')
+            .setLabel('Stand')
             .setStyle('DANGER'),
         // .setDisabled(true),
         // new MessageButton()
@@ -30,7 +30,7 @@ const row = new MessageActionRow()
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('blackjack')
-        // .setDescription('Dealer stands on soft 17; Blackjack pays 3:2')
+        .setDescription('Single Deck; Dealer stands on all 17s; Blackjack pays 3:2')
         .addIntegerOption(o => o
             .setName('points')
             .setRequired(true)
@@ -91,7 +91,7 @@ module.exports = {
                             if (p.stay) throw new Error(`You already clicked stay`);
                             return Hand.create({ PlayerId: p.id, card: table.deck.draw().toString() })
                                 .then(() => p.reload())
-                        case 'stay':
+                        case 'stand':
                             return p.update({ stay: true });
                         default:
                             throw new Error("Can't do that yet");
@@ -134,8 +134,8 @@ async function dealerPlay(dealer, table, tableMessage) {
     while (dealer.handValue <= 16) {
         console.log(`dealer has ${dealer.handValue}`);
         await Hand.create({ PlayerId: dealer.id, card: table.deck.draw().toString() })
-            .then(() => dealer.reload())
             .then(() => console.log(`\nDealer hit on ${dealer.handValue}\n`))
+            .then(() => dealer.reload())
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
