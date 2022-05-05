@@ -37,6 +37,7 @@ module.exports = {
         let [player, newPlayer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
 
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
+        user.decrement({ balance: player.bet });
         interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} blackjack with ${player.bet} 💰 bet!` });
 
         if (!newTable) return;
@@ -65,18 +66,14 @@ module.exports = {
         players.forEach(p => p.reload().then(() => {
             p.getUser()
                 .then(u => {
-                    if (!u) return;
-                    u.decrement({ balance: p.bet });
-
-                    if (p.handValue == 21) interaction.guild.fetch()
+                    if (u && p.hasBlackjack()) interaction.guild.fetch()
                         .then(g => g.members.cache.find(m => m.user.tag === u.username))
                         .then(m => tableMessage.reply({ content: `${m.user} got Blackjack!` }))
                         .then(() => p.update({ stay: true }));
                 });
         }));
 
-        if (dealer.handValue == 21)
-            tableMessage.reply({ content: "Dealer got Blackjack!" }).then(() => collector.stop());
+        if (dealer.hasBlackjack()) collector.stop();
 
         collector.on('collect', i => {
             collector.resetTimer();
@@ -97,16 +94,16 @@ module.exports = {
                             throw new Error("Can't do that yet");
                     }
                 })
-                .then((p) => i.reply({ content: `${i.user} ${p.handValue > 21 ? "You busted!" : "You have " + p.handValue}`, ephemeral: true }))
                 // update table embed
                 .then(() => table.getHandEmbeds())
-                .then(embeds => tableMessage.edit({ embeds: embeds }))
+                .then(embeds => i.update({ embeds: embeds }))
                 // check if everyone has finished or busted
                 .then(() => Player.findAll({ where: { tableId: table.id } }))
                 .then(all => {
                     let done = all.filter(p => p.handValue >= 21 || p.stay).length;
                     let busted = all.filter(p => p.handValue > 21).length;
-                    if (busted >= all.length - 1) dealer.update({ stay: true });
+                    let blackjack = all.filter(p => p.hasBlackjack()).length;
+                    if (busted + blackjack >= all.length - 1) dealer.update({ stay: true });
                     if (done >= all.length - 1) collector.stop();
                 })
                 .catch(err => i.reply({ content: err.message, ephemeral: true }));
@@ -143,7 +140,7 @@ async function dealerPlay(dealer, table, tableMessage) {
             .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
     let reply = "Dealer ";
-    if (dealer.handValue == 21 && dealer.Cards.length == 2) reply += "has Blackjack!";
+    if (dealer.hasBlackjack()) reply += "has Blackjack!";
     else if (dealer.handValue > 21) reply += "busted!";
     else reply += `has ${dealer.handValue}!`;
     return tableMessage.reply({ content: reply });
@@ -159,12 +156,16 @@ async function payout(dealer, table, guildMembers, tableMessage) {
         let winnings = 0;
         let member = guildMembers.find(m => m.user.tag === user.username);
 
-        // bust or lose
-        if (player.handValue > 21 || (dealer.handValue <= 21 && player.handValue < dealer.handValue)) continue;
+        // bust
+        if (player.handValue > 21) continue;
+        // dealer has blackjack
+        else if (dealer.hasBlackjack() && !player.hasBlackjack()) continue;
+        // dealer has better hand
+        else if (dealer.handValue <= 21 && player.handValue < dealer.handValue) continue;
+        // player has blackjack
+        else if (player.hasBlackjack() && !dealer.hasBlackjack()) winnings = Math.ceil(player.bet * 3 / 2);
         // push
         else if (player.handValue == dealer.handValue) winnings = 0;
-        // blackjack
-        else if (player.handValue == 21 && player.Cards.length == 2) winnings = Math.ceil(player.bet * 3 / 2);
         // other win
         else if (player.handValue > dealer.handValue || dealer.handValue > 21) winnings = player.bet;
 

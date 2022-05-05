@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
             Player.hasMany(models.Card, { onDelete: 'CASCADE' });
             Player.addScope('defaultScope', { include: models.Card });
         }
+
+        hasBlackjack() {
+            return this.handValue == 21 && this.Cards.length == 2;
+        }
     };
 
     Player.init({

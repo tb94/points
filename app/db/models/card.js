@@ -10,7 +10,6 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             // define association here
             Card.belongsTo(models.Player);
-            Card.belongsTo(models.Blackjack)
         }
 
         isAce() {
