@@ -66,14 +66,15 @@ module.exports = {
         players.forEach(p => p.reload().then(() => {
             p.getUser()
                 .then(u => {
-                    if (u && p.hasBlackjack()) interaction.guild.fetch()
+                    if (u != null && p.hasBlackjack()) interaction.guild.fetch()
                         .then(g => g.members.cache.find(m => m.user.tag === u.username))
                         .then(m => tableMessage.reply({ content: `${m.user} got Blackjack!` }))
                         .then(() => p.update({ stay: true }));
                 });
         }));
 
-        if (dealer.hasBlackjack()) collector.stop();
+        if (dealer.hasBlackjack())
+            tableMessage.reply("Dealer has Blackjack!").then(() => collector.stop());
 
         collector.on('collect', i => {
             collector.resetTimer();
@@ -139,11 +140,6 @@ async function dealerPlay(dealer, table, tableMessage) {
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
-    let reply = "Dealer ";
-    if (dealer.hasBlackjack()) reply += "has Blackjack!";
-    else if (dealer.handValue > 21) reply += "busted!";
-    else reply += `has ${dealer.handValue}!`;
-    return tableMessage.reply({ content: reply });
 }
 
 async function payout(dealer, table, guildMembers, tableMessage) {
