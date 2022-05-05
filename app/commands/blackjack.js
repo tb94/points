@@ -81,7 +81,7 @@ module.exports = {
         collector.on('collect', i => {
             collector.resetTimer();
             User.findOne({ where: { username: i.user.tag, guild: i.guildId } })
-                .then(u => Player.findOne({ where: { tableId: table.id, UserId: u.id } }))
+                .then(u => { if (!u) throw new Error(`That's not for you`); return Player.findOne({ where: { tableId: table.id, UserId: u.id } }) })
                 .then(p => {
                     switch (i.customId) {
                         case 'hit':
