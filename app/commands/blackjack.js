@@ -12,7 +12,11 @@ const row = new MessageActionRow()
         new MessageButton()
             .setCustomId('stand')
             .setLabel('Stand')
-            .setStyle('DANGER')
+            .setStyle('DANGER'),
+        new MessageButton()
+            .setCustomId('double')
+            .setLabel('Double')
+            .setStyle('PRIMARY')
     );
 
 module.exports = {
@@ -48,49 +52,51 @@ module.exports = {
             await new Promise((resolve) => { setTimeout(resolve, 1250) });
         }
 
+        let guildMembers = await interaction.guild.fetch().then(g => g.members.cache);
+
         let [dealer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: null }, defaults: { position: 0 } });
         let players = await table.getPlayers();
         players.sort((p1, p2) => p1.position - p2.position);
 
         // deal hands
-        await dealCards(table);
-        await dealCards(table);
+        for (let p of players) {
+            await hit(table, p);
+        }
+        for (let p of players) {
+            await hit(table, p);
+        }
 
-        dealer.reload();
-
-        let embeds = await table.getHandEmbeds();
         row.components.forEach(button => button.setDisabled(false));
-        let tableMessage = await interaction.followUp({ content: "\u200b", embeds: embeds, components: [row] })
+
+        let tableMessage = await table.getHandEmbeds()
+            .then(embeds => interaction.followUp({ content: "\u200b", embeds: embeds, components: [row] }));
+
         let collector = tableMessage.createMessageComponentCollector({ componentType: 'BUTTON', time: (30 * 1000) });
 
         players.forEach(p => p.reload().then(() => {
-            p.getUser()
+            if (p.hasBlackjack()) return p.getUser()
                 .then(u => {
-                    if (u != null && p.hasBlackjack()) interaction.guild.fetch()
-                        .then(g => g.members.cache.find(m => m.user.tag === u.username))
-                        .then(m => tableMessage.reply({ content: `${m.user} got Blackjack!` }))
-                        .then(() => p.update({ stay: true }));
+                    if (u == null) throw new Error("Dealer has Blackjack!");
+                    return tableMessage.reply({ content: `${guildMembers.find(m => m.user.tag === u.username).user} got Blackjack!` });
                 });
-        }));
-
-        if (dealer.hasBlackjack())
-            tableMessage.reply("Dealer has Blackjack!").then(() => collector.stop());
+        }).catch(err => tableMessage.reply(err.message).then(() => collector.stop())));
 
         collector.on('collect', i => {
             collector.resetTimer();
             User.findOne({ where: { username: i.user.tag, guild: i.guildId } })
-                .then(u => { if (!u) throw new Error(`That's not for you`); return Player.findOne({ where: { tableId: table.id, UserId: u.id } }) })
+                .then(u => {
+                    if (!u) throw new Error(`That's not for you`);
+                    return Player.findOne({ where: { tableId: table.id, UserId: u.id } })
+                })
                 .then(p => {
+                    if (!p) throw new Error(`That's not for you`);
                     switch (i.customId) {
                         case 'hit':
-                            if (p.handValue >= 21) throw new Error(`You already ${p.handValue === 21 ? "have 21" : "busted"}!`);
-                            if (p.stay) throw new Error(`You already clicked stay`);
-                            let c = table.deck.draw().toString();
-                            return Card.create({ PlayerId: p.id, value: c.substring(0, c.length - 1), suit: c.slice(-1) })
-                                .then(() => p.update({ stay: p.handValue >= 21 }))
-                                .then(() => p.reload())
+                            return hit(table, p);
                         case 'stand':
-                            return p.update({ stay: true });
+                            return stand(p);
+                        case 'double':
+                            return double(table, p);
                         default:
                             throw new Error("Can't do that yet");
                     }
@@ -99,7 +105,7 @@ module.exports = {
                 .then(() => table.getHandEmbeds())
                 .then(embeds => i.update({ embeds: embeds }))
                 // check if everyone has finished or busted
-                .then(() => Player.findAll({ where: { tableId: table.id } }))
+                .then(() => table.getPlayers())
                 .then(all => {
                     let done = all.filter(p => p.handValue >= 21 || p.stay).length;
                     let busted = all.filter(p => p.handValue > 21).length;
@@ -107,10 +113,10 @@ module.exports = {
                     if (busted + blackjack >= all.length - 1) dealer.update({ stay: true });
                     if (done >= all.length - 1) collector.stop();
                 })
-                .catch(err => i.reply({ content: err.message, ephemeral: true }));
+                .catch(err => i.replied ? i.followUp({ content: err.message, ephemeral: true }) : i.reply({ content: err.message, ephemeral: true }));
         });
 
-        collector.on('end', collection => {
+        collector.on('end', () => {
             // disable buttons
             row.components.forEach(button => {
                 button.setDisabled();
@@ -121,22 +127,19 @@ module.exports = {
                 // dealer hits until 17
                 .then(() => dealerPlay(dealer, table, tableMessage))
                 // payout
-                .then(() => interaction.guild.fetch())
-                .then(g => g.members.cache)
-                .then(members => payout(dealer, table, members, tableMessage))
+                .then(() => payout(dealer, table, guildMembers, tableMessage))
                 // delete blackjack instance
                 .then(() => table.destroy({ force: true }))
                 .catch(console.log);
-        })
+        });
     }
 }
 
 async function dealerPlay(dealer, table, tableMessage) {
+    await dealer.reload();
     while (dealer.handValue <= 16 && !dealer.stay) {
-        let c = table.deck.draw().toString();
-        await Card.create({ PlayerId: dealer.id, value: c.substring(0, c.length - 1), suit: c.slice(-1) })
-            .then(() => dealer.reload())
-            .then(() => new Promise((resolve) => setTimeout(resolve, 2000)))
+        dealer = await hit(table, dealer)
+            .then(() => new Promise((resolve) => setTimeout(resolve, 100)))
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
@@ -144,6 +147,7 @@ async function dealerPlay(dealer, table, tableMessage) {
 
 async function payout(dealer, table, guildMembers, tableMessage) {
     let players = await table.getPlayers()
+    await dealer.reload();
     for (let player of players) {
         await player.reload();
         let user = await player.getUser();
@@ -168,15 +172,30 @@ async function payout(dealer, table, guildMembers, tableMessage) {
         await user.increment({ balance: winnings + player.bet });
         if (winnings > 0)
             await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
+        await player.destroy();
     }
 }
 
-async function dealCards(table) {
-    let players = await table.getPlayers();
+function hit(table, player) {
+    if (player.handValue >= 21) throw new Error(`You already ${player.handValue === 21 ? "have 21" : "busted"}!`);
+    if (player.stay) throw new Error(`You already clicked stand`);
 
-    for (let player of players) {
-        let card = table.deck.draw().toString();
-        await Card.create({ PlayerId: player.id, value: card.substring(0, card.length -1), suit: card.slice(-1) });
-        await player.reload();
-    }
+    let card = table.deck.draw().toString();
+    return Card.create({ PlayerId: player.id, value: card.substring(0, card.length - 1), suit: card.slice(-1) })
+        .then(() => player.reload());
+}
+
+function double(table, player) {
+    return player.getUser()
+    .then(user => {
+        if (user.balance < player.bet) throw new Error("You don't have enough points for that");
+        return user.decrement({ balance: player.bet });
+    })
+    .then(() => player.increment({ bet: player.bet }))
+    .then(() => hit(table, player))
+    .then(() => player.update({ stay: true }))
+}
+
+function stand(player) {
+    if (!player.stay) return player.update({ stay: true });
 }
