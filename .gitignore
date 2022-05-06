@@ -5,3 +5,4 @@ database.sqlite
 db/migrations
 db/seeders
 .env
+.idea
