@@ -5,7 +5,7 @@ const { Deck } = require('../helpers/cards');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('baccarat')
-        .setDescription('Play Baccarat!')
+        .setDescription('Banker takes 5% commission; tie pays 8:1')
         .addIntegerOption(o => o
             .setName('points')
             .setRequired(true)
