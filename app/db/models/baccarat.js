@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
         startTime: DataTypes.DATE
     }, {
         hooks: {
-            beforeCreate: (table, options) => { table.startTime = Date.now() + (3 * 1000); }
+            beforeCreate: (table, options) => { table.startTime = Date.now() + (10 * 1000); }
         },
         sequelize,
         timestamps: false,
