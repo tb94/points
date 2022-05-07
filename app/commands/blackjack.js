@@ -82,7 +82,6 @@ module.exports = {
         }).catch(err => tableMessage.reply(err.message).then(() => collector.stop())));
 
         collector.on('collect', i => {
-            collector.resetTimer();
             User.findOne({ where: { username: i.user.tag, guild: i.guildId } })
                 .then(u => {
                     if (!u) throw new Error(`That's not for you`);
@@ -92,6 +91,7 @@ module.exports = {
                     if (!p) throw new Error(`That's not for you`);
                     switch (i.customId) {
                         case 'hit':
+                            collector.resetTimer();
                             return hit(table, p);
                         case 'stand':
                             return stand(p);
@@ -110,8 +110,9 @@ module.exports = {
                     let done = all.filter(p => p.handValue >= 21 || p.stay).length;
                     let busted = all.filter(p => p.handValue > 21).length;
                     let blackjack = all.filter(p => p.hasBlackjack()).length;
-                    if (busted + blackjack >= all.length - 1) dealer.update({ stay: true });
-                    if (done >= all.length - 1) collector.stop();
+
+                    if (busted + blackjack >= all.length - 1) return dealer.update({ stay: true }).then(() => collector.stop());
+                    if (done >= all.length - 1) return collector.stop();
                 })
                 .catch(err => i.replied ? i.followUp({ content: err.message, ephemeral: true }) : i.reply({ content: err.message, ephemeral: true }));
         });
@@ -138,7 +139,8 @@ module.exports = {
 async function dealerPlay(dealer, table, tableMessage) {
     await dealer.reload();
     while (dealer.handValue <= 16 && !dealer.stay) {
-        dealer = await hit(table, dealer)
+        await dealer.reload()
+            .then(() => hit(table, dealer))
             .then(() => new Promise((resolve) => setTimeout(resolve, 100)))
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
