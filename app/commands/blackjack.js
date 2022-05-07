@@ -49,7 +49,7 @@ module.exports = {
         // game logic starts here
 
         while (table.startTime.getTime() >= Date.now()) {
-            await new Promise((resolve) => { setTimeout(resolve, 1250) });
+            await new Promise((resolve) => { setTimeout(resolve, 2000) });
         }
 
         let guildMembers = await interaction.guild.fetch().then(g => g.members.cache);
@@ -124,7 +124,9 @@ module.exports = {
             });
 
             // flip dealer card
-            table.getHandEmbeds(true).then(embeds => tableMessage.edit({ components: [row], embeds: embeds }))
+            dealer.reload()
+                .then(() => table.getHandEmbeds(true))
+                .then(embeds => tableMessage.edit({ components: [row], embeds: embeds }))
                 // dealer hits until 17
                 .then(() => dealerPlay(dealer, table, tableMessage))
                 // payout
@@ -137,11 +139,9 @@ module.exports = {
 }
 
 async function dealerPlay(dealer, table, tableMessage) {
-    await dealer.reload();
     while (dealer.handValue <= 16 && !dealer.stay) {
         await dealer.reload()
             .then(() => hit(table, dealer))
-            .then(() => new Promise((resolve) => setTimeout(resolve, 100)))
             .then(() => table.getHandEmbeds(true))
             .then(embeds => tableMessage.edit({ embeds: embeds }));
     }
@@ -189,13 +189,17 @@ function hit(table, player) {
 
 function double(table, player) {
     return player.getUser()
-    .then(user => {
-        if (user.balance < player.bet) throw new Error("You don't have enough points for that");
-        return user.decrement({ balance: player.bet });
-    })
-    .then(() => player.increment({ bet: player.bet }))
-    .then(() => hit(table, player))
-    .then(() => player.update({ stay: true }))
+        .then(user => {
+            if (user.balance < player.bet) throw new Error("You don't have enough points for that");
+            return user.decrement({ balance: player.bet });
+        })
+        .then(() => player.getCards())
+        .then(cards => {
+            if (cards.length > 2) throw new Error("You can't double after hitting");
+        })
+        .then(() => player.increment({ bet: player.bet }))
+        .then(() => hit(table, player))
+        .then(() => player.update({ stay: true }))
 }
 
 function stand(player) {
