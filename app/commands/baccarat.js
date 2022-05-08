@@ -62,11 +62,14 @@ module.exports = {
 
         let tableMessage = await table.getHandEmbeds().then(embeds => interaction.followUp({ content: '\u200b', embeds: embeds }));
 
+        await new Promise((resolve) => setTimeout(resolve, 500));
         if (player.handValue % 10 >= 8 || dealer.handValue % 10 >= 8) {
             // natural win, no one draws
         } else if (player.handValue % 10 <= 5) {
             // player draws
             let thirdCard = await deal(player, deck.draw().toString());
+            await table.getHandEmbeds().then(embeds => tableMessage.edit({ content: '\u200b', embeds: embeds }));
+            await new Promise((resolve) => setTimeout(resolve, 500));
 
             switch (dealer.handValue % 10) {
                 case 0:
