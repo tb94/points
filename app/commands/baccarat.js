@@ -14,27 +14,30 @@ module.exports = {
             .setName('bet')
             .addChoice('player', 'player')
             .addChoice('banker', 'banker')
-            .addChoice('tie', 'tie')
             .setRequired(true)
-            .setDescription('Where to place your bet')),
+            .setDescription('Where to place your bet'))
+        .addIntegerOption(o => o
+            .setName('tie')
+            .setDescription('Side bet on tie')),
     async execute(interaction) {
         let points = interaction.options.getInteger('points');
         let bet = interaction.options.getString('bet');
+        let tie = interaction.options.getInteger('tie') ?? 0;
 
         if (points < 20) return interaction.reply({ content: "This game has a minimum bet of 20 💰", ephemeral: true });
 
         let [user] = await User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
-        if (user.balance < points) return interaction.reply({ content: "You don't have that many points!", ephemeral: true });
+        if (user.balance < points + tie) return interaction.reply({ content: "You don't have that many points!", ephemeral: true });
 
         let [table, newTable] = await Baccarat.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: Player })
         if (Date.now() > table.startTime.getTime()) return interaction.reply({ content: "A game is already in session, wait for the next hand", ephemeral: true });
 
-        let [player, newPlayer] = await Player.findCreateFind({ where: { BaccaratId: table.id, UserId: user.id }, defaults: { bet: points, baccaratBet: bet } });
+        let [player, newPlayer] = await Player.findCreateFind({ where: { BaccaratId: table.id, UserId: user.id }, defaults: { bet: points, baccaratBet: bet, tieBet: tie } });
 
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
-        user.decrement({ balance: points });
+        user.decrement({ balance: points + tie });
 
-        interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} baccarat with ${player.bet} 💰 on ${player.baccaratBet}!` });
+        interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} baccarat with ${player.bet} 💰 on ${player.baccaratBet}${player.tieBet > 0 ? " and " + player.tieBet + " 💰 on tie!" : "!"}` });
 
         if (!newTable) return;
 
@@ -118,35 +121,17 @@ async function payout(dealer, player, table, guildMembers, tableMessage) {
         let winnings = 0;
         let member = guildMembers.find(m => m.user.tag === user.username);
 
-        switch (p.baccaratBet) {
-            case "banker":
-                if (dealer.handValue % 10 > player.handValue % 10) {
-                    winnings = Math.ceil(p.bet * 0.95);
-                    console.log(`${user.username} bet on ${p.baccaratBet} and won`);
-                    await user.increment({ balance: winnings + p.bet });
-                    await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
-                }
-                break;
-            case "player":
-                if (player.handValue % 10 > dealer.handValue % 10) {
-                    winnings = p.bet;
-                    console.log(`${user.username} bet on ${p.baccaratBet} and won`);
-                    await user.increment({ balance: winnings + p.bet });
-                    await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
-                }
-                break;
-            case "tie":
-                if (player.handValue % 10 === dealer.handValue % 10) {
-                    winnings = p.bet * 8;
-                    console.log(`${user.username} bet on ${p.baccaratBet} and won`);
-                    await user.increment({ balance: winnings + p.bet });
-                    await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
-                }
-                break;
-            default:
-                console.log(`${user.username} bet on ${p.baccaratBet} and lost`);
-                continue;
-        }
+
+        if (dealer.handValue % 10 === player.handValue % 10) {
+            winnings = p.tieBet * 8;
+        } else if (dealer.handValue % 10 > player.handValue % 10 && p.baccaratBet == "banker") {
+            winnings = Math.ceil(p.bet * 0.95);
+        } else if (player.handValue % 10 > dealer.handValue % 10 && p.baccaratBet == "player") {
+            winnings = p.bet;
+        } else continue;
+
+        await user.increment({ balance: winnings + p.bet })
+        if (winnings > 0) await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
         await player.destroy();
     }
     await table.destroy({ force: true });
