@@ -27,12 +27,10 @@ module.exports = {
             .setName('points')
             .setRequired(true)
             .setDescription('How many points to bet')),
-    async execute(interaction) {
+    async execute(interaction, user) {
         let bet = interaction.options.getInteger('points');
 
         if (bet <= 0) return interaction.reply({ content: "You have to bet a real amount", ephemeral: true });
-
-        let [user] = await User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
         if (user.balance < bet) return interaction.reply({ content: "You don't have that many points!", ephemeral: true });
 
         let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: Player });
@@ -82,7 +80,7 @@ module.exports = {
         }).catch(err => tableMessage.reply(err.message).then(() => collector.stop())));
 
         collector.on('collect', i => {
-            User.findOne({ where: { username: i.user.tag, guild: i.guildId } })
+            User.findOne({ where: { snowflake: i.user.id, guild: i.guildId } })
                 .then(u => {
                     if (!u) throw new Error(`That's not for you`);
                     return Player.findOne({ where: { tableId: table.id, UserId: u.id } })
@@ -156,7 +154,7 @@ async function payout(dealer, table, guildMembers, tableMessage) {
         if (!user) continue;
 
         let winnings = 0;
-        let member = guildMembers.find(m => m.user.tag === user.username);
+        let member = guildMembers.find(m => m.user.id === user.snowflake);
 
         // bust
         if (player.handValue > 21) continue;

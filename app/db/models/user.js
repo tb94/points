@@ -11,9 +11,14 @@ module.exports = (sequelize, DataTypes) => {
             // define association here
             User.hasOne(models.Player);
         }
-    };
+    }
 
     User.init({
+        snowflake: {
+            type: DataTypes.STRING,
+            // unique: true,
+            // allowNull: true
+        },
         username: DataTypes.STRING,
         guild: DataTypes.STRING,
         balance: {

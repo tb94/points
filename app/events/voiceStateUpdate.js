@@ -17,18 +17,24 @@ module.exports = {
     }
 }
 
-function joinChat(newState) {
+function joinChat(state) {
     const t = Date.now();
-    if (!newState.member.user.bot)
-        return User.findCreateFind({ where: { username: newState.member.user.tag, guild: newState.guild.id } })
+    if (!state.member.user.bot)
+        return User.findCreateFind({
+            where: { snowflake: state.member.user.id, guild: state.guild.id },
+            defaults: { username: state.member.user.tag }
+        })
             .then(([u]) => u.set('voiceActivity', t))
             .then(u => u.save())
             .catch(err => console.error(err));
 }
 
-function leaveChat(oldState) {
-    if (!oldState.member.user.bot)
-        return User.findCreateFind({ where: { username: oldState.member.user.tag, guild: oldState.guild.id } })
+function leaveChat(state) {
+    if (!state.member.user.bot)
+        return User.findCreateFind({
+            where: { snowflake: state.member.user.id, guild: state.guild.id },
+            defaults: { username: state.member.user.tag }
+        })
             .then(([u]) => u.set('voiceActivity', null))
             .then(u => u.save())
             .catch(err => console.error(err));
