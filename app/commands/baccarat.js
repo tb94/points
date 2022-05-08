@@ -62,38 +62,39 @@ module.exports = {
 
         let tableMessage = await table.getHandEmbeds().then(embeds => interaction.followUp({ content: '\u200b', embeds: embeds }));
 
-        let thirdCard;
-        if (player.handValue % 10 <= 5) {
-            thirdCard = await deal(player, deck.draw().toString());
-            await new Promise((resolve) => { setTimeout(resolve, 1000) });
-            switch (thirdCard.value) {
-                case '2':
-                case '3':
-                    if (dealer.handValue % 10 <= 4) await deal(dealer, deck.draw().toString());
+        if (player.handValue % 10 >= 8 || dealer.handValue % 10 >= 8) {
+            // natural win, no one draws
+        } else if (player.handValue % 10 <= 5) {
+            // player draws
+            let thirdCard = await deal(player, deck.draw().toString());
+
+            switch (dealer.handValue % 10) {
+                case 0:
+                case 1:
+                case 2:
+                    await deal(dealer, deck.draw().toString());
                     break;
-                case '4':
-                case '5':
-                    if (dealer.handValue % 10 <= 5) await deal(dealer, deck.draw().toString());
+                case 3:
+                    if (thirdCard.value != '8') await deal(dealer, deck.draw().toString());
                     break;
-                case '6':
-                case '7':
-                    if (dealer.handValue % 10 <= 6) await deal(dealer, deck.draw().toString());
+                case 4:
+                    if (['2', '3', '4', '5', '6', '7'].includes(thirdCard.value)) await deal(dealer, deck.draw().toString());
                     break;
-                case '8':
-                    if (dealer.handValue % 10 <= 2) await deal(dealer, deck.draw().toString());
+                case 5:
+                    if (['4', '5', '6', '7'].includes(thirdCard.value)) await deal(dealer, deck.draw().toString());
+                    break;
+                case 6:
+                    if (['6', '7'].includes(thirdCard.value)) await deal(dealer, deck.draw().toString());
                     break;
                 default:
-                    if (dealer.handValue % 10 <= 3) await deal(dealer, deck.draw().toString());
                     break;
             }
-            // banker hits when hand value <= 5
+            // player stands
         } else if (dealer.handValue % 10 <= 5) await deal(dealer, deck.draw().toString());
 
         await table.getHandEmbeds().then(embeds => tableMessage.edit({ content: '\u200b', embeds: embeds }));
 
         await payout(dealer, player, table, guildMembers, tableMessage);
-
-        table.destroy({ force: true });
     }
 }
 
@@ -143,6 +144,7 @@ async function payout(dealer, player, table, guildMembers, tableMessage) {
                 console.log(`${user.username} bet on ${p.baccaratBet} and lost`);
                 continue;
         }
-        await player.destroy();            
+        await player.destroy();
     }
+    await table.destroy({ force: true });
 }
