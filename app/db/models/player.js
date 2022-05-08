@@ -24,8 +24,9 @@ module.exports = (sequelize, DataTypes) => {
         bet: DataTypes.INTEGER,
         position: DataTypes.INTEGER,
         stay: DataTypes.BOOLEAN,
-        baccaratBet: DataTypes.STRING,
-        tieBet: DataTypes.STRING,
+        playerBet: DataTypes.INTEGER,
+        bankerBet: DataTypes.INTEGER,
+        tieBet: DataTypes.INTEGER,
         handValue: {
             type: DataTypes.VIRTUAL,
             get() {
