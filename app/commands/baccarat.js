@@ -122,17 +122,20 @@ async function payout(dealer, player, table, guildMembers, tableMessage) {
         let member = guildMembers.find(m => m.user.tag === user.username);
 
 
-        if (dealer.handValue % 10 === player.handValue % 10) {
+        if (dealer.handValue % 10 === player.handValue % 10 && p.tieBet > 0) {
             winnings = p.tieBet * 8;
+            await user.increment({ balance: winnings + p.tieBet })
         } else if (dealer.handValue % 10 > player.handValue % 10 && p.baccaratBet == "banker") {
             winnings = Math.ceil(p.bet * 0.95);
+            await user.increment({ balance: winnings + p.bet })
         } else if (player.handValue % 10 > dealer.handValue % 10 && p.baccaratBet == "player") {
             winnings = p.bet;
-        } else continue;
+            await user.increment({ balance: winnings + p.bet })
+        } 
 
-        await user.increment({ balance: winnings + p.bet })
         if (winnings > 0) await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
         await player.destroy();
+
     }
     await table.destroy({ force: true });
 }
