@@ -20,6 +20,7 @@ module.exports = {
         let bankerBet = interaction.options.getInteger('banker') ?? 0;
         let tieBet = interaction.options.getInteger('tie') ?? 0;
 
+        if (playerBet < 0 || bankerBet < 0 || tieBet < 0) return interaction.reply({ content: "That's not a real bet!", ephemeral: true });
         if (playerBet + bankerBet + tieBet == 0) return interaction.reply({ content: 'You have to bet on something!', ephemeral: true });
 
         let [user] = await User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
