@@ -31,7 +31,6 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         timestamps: false,
         modelName: 'User',
-        indexes: [{ unique: true, fields: ['username', 'guild'] }]
     });
 
     return User;
