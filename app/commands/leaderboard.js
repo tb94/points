@@ -17,29 +17,41 @@ module.exports = {
                     [Op.in]: members.map(m => m.user.id)
                 }
             },
-            order: [['balance', 'DESC']],
-            limit: 10
+            order: [['balance', 'DESC']]
         });
 
         let place = 0;
-        let embed = new MessageEmbed()
+        let embeds = [];
+        let top3embed = new MessageEmbed()
             .setTitle("Leaderboard");
-        let leaders = users.filter(u => members.find(m => m.user.id === u.snowflake) != null);
-        
-        if (leaders.length >= 5 && leaders.length < 10 ) leaders = leaders.slice(0, 5);
-        else if (leaders.length < 10) leaders = leaders.slice(0, 3);
 
-        for (var user of leaders) {
+        users = users.filter(u => members.find(m => m.user.id === u.snowflake) != null);
+        let leaders = users.slice(0, 3);
+            
+        for (let user of leaders) {
             let member = members.find(m => m.user.id == user.snowflake);
-            console.log(`adding user to leaderboard:`);
-            console.log(member);
-            console.log(user);
-            embed.addFields({ name: "\u200b", value: `${medals[place]}`, inline: true },
+            top3embed.addFields({ name: `\u200b`, value: `${medals[place]}`, inline: true },
                 { name: "\u200b", value: `${member.user}`, inline: true },
                 { name: "\u200b", value: `${user.balance} 💰`, inline: true });
             place++;
         }
 
-        await interaction.reply({ embeds: [embed] })
+        embeds.push(top3embed);
+        if (users.length < 5) return interaction.reply({ embeds: [top3embed] });
+
+        let midfieldEmbed = new MessageEmbed();
+
+        let followers = users.slice(3, 10);
+
+        for (let user of followers) {
+            let member = members.find(m => m.user.id == user.snowflake);
+            midfieldEmbed.addFields({ name: `\u200b`, value: `${medals[place]}`, inline: true },
+                { name: "\u200b", value: `${member.user}`, inline: true },
+                { name: "\u200b", value: `${user.balance} 💰`, inline: true });
+            place++;
+        }
+        embeds.push(midfieldEmbed);
+
+        await interaction.reply({ embeds: embeds })
     }
 };
