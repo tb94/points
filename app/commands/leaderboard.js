@@ -31,6 +31,7 @@ module.exports = {
 
         for (var user of leaders) {
             let member = members.find(m => m.user.id == user.snowflake);
+            console.log(`adding user to leaderboard:\n${member}\n${user}`);
             embed.addFields({ name: "\u200b", value: `${medals[place]}`, inline: true },
                 { name: "\u200b", value: `${member.user}`, inline: true },
                 { name: "\u200b", value: `${user.balance} 💰`, inline: true });
