@@ -5,7 +5,10 @@ module.exports = {
     async execute(interaction) {
         if (interaction.user.bot) return;
 
-        User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guild.id } });
+        let [user] = await User.findCreateFind({
+            where: { snowflake: interaction.user.id, guild: interaction.guild.id },
+            defaults: { username: interaction.user.tag }
+        });
 
         switch (true) {
             case interaction.isCommand():
@@ -14,8 +17,7 @@ module.exports = {
                 if (!command) return;
 
                 try {
-                    // this should take a user object
-                    await command.execute(interaction);
+                    await command.execute(interaction, user);
                 } catch (err) {
                     console.error(err);
                     await interaction.reply({ content: `There was an error executing command: ${command.name}`, ephemeral: true });

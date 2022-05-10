@@ -11,9 +11,10 @@ module.exports = (sequelize, DataTypes) => {
             // define association here
             User.hasMany(models.Player);
         }
-    };
+    }
 
     User.init({
+        snowflake: DataTypes.STRING,
         username: DataTypes.STRING,
         guild: DataTypes.STRING,
         balance: {
@@ -26,7 +27,6 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         timestamps: false,
         modelName: 'User',
-        indexes: [{ unique: true, fields: ['username', 'guild'] }]
     });
 
     return User;
