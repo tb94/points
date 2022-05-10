@@ -22,19 +22,19 @@ module.exports = {
         //     .then(() => console.log("Database populated"))
         //     .catch(err => console.error(err)));
 
-        await User.findAll({ where: { snowflake: null } })
-            .then(users => {
-                oauth2Guilds.forEach(pg => pg.fetch()
-                    .then(g => g.members.fetch({ force: true }))
-                    .then(members => members.filter(m => !m.user.bot))
-                    .then(async (members) => {
-                        for (let u of users) {
-                            let m = members.find(m => m.user.tag === u.username);
-                            if (!m) console.log(`Could not find guild member with username: ${u.username}`);
-                            await u.update({ snowflake: m?.user?.id });
-                        }
-                    }))
-            })
+        // await User.findAll({ where: { snowflake: null } })
+        //     .then(users => {
+        //         oauth2Guilds.forEach(pg => pg.fetch()
+        //             .then(g => g.members.fetch({ force: true }))
+        //             .then(members => members.filter(m => !m.user.bot))
+        //             .then(async (members) => {
+        //                 for (let u of users) {
+        //                     let m = members.find(m => m.user.tag === u.username);
+        //                     if (!m) console.log(`Could not find guild member with username: ${u.username}`);
+        //                     await u.update({ snowflake: m?.user?.id });
+        //                 }
+        //             }))
+        //     })
 
         // await oauth2Guilds.forEach(pg => pg.fetch()
         // .then(g => g.members.fetch({ force: true }))

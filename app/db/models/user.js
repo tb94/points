@@ -14,11 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     User.init({
-        snowflake: {
-            type: DataTypes.STRING,
-            // unique: true,
-            // allowNull: true
-        },
+        snowflake: DataTypes.STRING,
         username: DataTypes.STRING,
         guild: DataTypes.STRING,
         balance: {
