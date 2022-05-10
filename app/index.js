@@ -54,8 +54,7 @@ for (const c of commands) {
 	console.log(`Registered command: ${command.data.name}`)
 }
 
-setInterval(() => User.findAll({ where: { voiceActivity: { [Op.not]: null } } })
-	.then(users => users.forEach(u => u.increment('balance'))),
+setInterval(() => User.increment('balance', { where: { voiceActivity: { [Op.not]: null } } }),
 	1000 * 60);
 
 // Login to Discord with your client's token
