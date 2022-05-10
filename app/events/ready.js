@@ -14,19 +14,30 @@ module.exports = {
         //     .then(members => {
         //         return Promise.all(members.filter(m => !m.user.bot).map(async (member) => {
         //             return User.findCreateFind({
-        //                 where: { username: member.user.tag, guild: member.guild.id, balance: 1000 }
+        //                 where: { username: member.user.tag, guild: member.guild.id, balance: 1000 },
+        //                 defaults: { balance: 1000 }
         //             });
         //         }));
         //     })
         //     .then(() => console.log("Database populated"))
         //     .catch(err => console.error(err)));
 
+        await User.findAll({ where: { snowflake: null } })
+            .then(users => {
+                oauth2Guilds.forEach(pg => pg.fetch()
+                    .then(g => g.members.fetch({ force: true }))
+                    .then(members => members.filter(m => !m.user.bot))
+                    .then(members => {
+                        users.forEach(u => u.update({ snowflake: members.find(m => m.user.tag === u.username).user.id }))
+                    }))
+            })
+
         // await oauth2Guilds.forEach(pg => pg.fetch()
         // .then(g => g.members.fetch({ force: true }))
         // .then(members => {
         //     return Promise.all(members.filter(m => m.user.bot).map(async (member) => {
         //         return User.destroy({
-        //             where: { username: member.user.tag, guild: member.guild.id }
+        //             where: { snowflake: member.user.id, guild: member.guild.id }
         //         });
         //     }));
         // }));
