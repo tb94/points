@@ -12,20 +12,20 @@ module.exports = {
             .then(members => User.findAll({
                 where: {
                     guild: interaction.guild.id,
-                    username: {
-                        [Op.in]: members.map(m => m.user.tag)
+                    snowflake: {
+                        [Op.in]: members.map(m => m.user.id)
                     }
                 },
                 order: [['balance', 'DESC']],
                 limit: 3
             }).then(users => {
-                var medals = ["🥇", "🥈", "🥉"];
-                var place = 0;
-                var embed = new MessageEmbed()
+                let medals = ["🥇", "🥈", "🥉"];
+                let place = 0;
+                let embed = new MessageEmbed()
                     .setTitle("Leaderboard")
 
                 for (var user of users) {
-                    member = members.find(m => m.user.tag == user.username);
+                    let member = members.find(m => m.user.id == user.snowflake);
                     embed.addFields({ name: "\u200b", value: `${medals[place]}`, inline: true },
                         { name: "\u200b", value: `${member.user}`, inline: true },
                         { name: "\u200b", value: `${user.balance} 💰`, inline: true });

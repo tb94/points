@@ -4,7 +4,9 @@ module.exports = {
     name: 'messageCreate',
     async execute(message) {
         if (!message.author.bot)
-            User.findCreateFind({ where: { username: message.author.tag, guild: message.guild.id } })
-                .then(([user, isNew]) => user.increment('balance'));
+            User.findCreateFind({
+                where: { snowflake: message.author.id, guild: message.guild.id },
+                defaults: { username: message.author.tag }
+            }).then(([user]) => user.increment('balance'));
     }
 }
