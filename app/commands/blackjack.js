@@ -38,7 +38,7 @@ module.exports = {
         let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: Player });
         if (table.startTime.getTime() < Date.now()) return interaction.reply({ content: "A game is already in session, wait for the next hand", ephemeral: true });
 
-        let [player, newPlayer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
+        let [player, newPlayer] = await Player.findCreateFind({ where: { BlackjackId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
 
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
         user.decrement({ balance: player.bet });
@@ -54,7 +54,7 @@ module.exports = {
 
         let guildMembers = await interaction.guild.fetch().then(g => g.members.cache);
 
-        let [dealer] = await Player.findCreateFind({ where: { tableId: table.id, UserId: null }, defaults: { position: 0 } });
+        let [dealer] = await Player.findCreateFind({ where: { BlackjackId: table.id, UserId: null }, defaults: { position: 0 } });
         let players = await table.getPlayers();
         players.sort((p1, p2) => p1.position - p2.position);
 
@@ -85,7 +85,7 @@ module.exports = {
             User.findOne({ where: { username: i.user.tag, guild: i.guildId } })
                 .then(u => {
                     if (!u) throw new Error(`That's not for you`);
-                    return Player.findOne({ where: { tableId: table.id, UserId: u.id } })
+                    return Player.findOne({ where: { BlackjackId: table.id, UserId: u.id } })
                 })
                 .then(p => {
                     if (!p) throw new Error(`That's not for you`);

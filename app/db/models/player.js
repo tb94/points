@@ -9,7 +9,8 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             Player.belongsTo(models.User);
-            Player.belongsTo(models.Blackjack, { foreignKey: 'tableId' });
+            Player.belongsTo(models.Blackjack);
+            Player.belongsTo(models.Baccarat);
             Player.hasMany(models.Card, { onDelete: 'CASCADE' });
             Player.addScope('defaultScope', { include: models.Card });
         }
@@ -23,6 +24,9 @@ module.exports = (sequelize, DataTypes) => {
         bet: DataTypes.INTEGER,
         position: DataTypes.INTEGER,
         stay: DataTypes.BOOLEAN,
+        playerBet: DataTypes.INTEGER,
+        bankerBet: DataTypes.INTEGER,
+        tieBet: DataTypes.INTEGER,
         handValue: {
             type: DataTypes.VIRTUAL,
             get() {

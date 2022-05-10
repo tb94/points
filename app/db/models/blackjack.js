@@ -1,8 +1,6 @@
 const { Model } = require('sequelize');
 const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
-
-const SUITS = ["♠", "♣", "♥", "♦"];
-const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+const { Deck } = require('../../helpers/cards');
 
 module.exports = (sequelize, DataTypes) => {
     class Blackjack extends Model {
@@ -14,11 +12,12 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // define association here
-            Blackjack.hasMany(models.Player, { foreignKey: 'tableId', onDelete: 'CASCADE' });
+            Blackjack.hasMany(models.Player, { onDelete: 'CASCADE' });
         }
 
         async startGame() {
             this.deck = new Deck();
+            this.deck.shuffle();
             this.deck.shuffle();
         }
 
@@ -64,48 +63,3 @@ module.exports = (sequelize, DataTypes) => {
     return Blackjack;
 };
 
-class Deck {
-    constructor(cards = freshDeck()) {
-        this.cards = cards
-    }
-
-    get numberOfCards() {
-        return this.cards.length
-    }
-
-    draw() {
-        return this.cards.shift()
-    }
-
-    shuffle() {
-        for (let i = this.numberOfCards - 1; i > 0; i--) {
-            const newIndex = Math.floor(Math.random() * (i + 1))
-            const oldValue = this.cards[newIndex]
-            this.cards[newIndex] = this.cards[i]
-            this.cards[i] = oldValue
-        }
-    }
-}
-
-class Card {
-    constructor(suit, value) {
-        this.suit = suit
-        this.value = value
-    }
-
-    get color() {
-        return this.suit === "♣" || this.suit === "♠" ? "black" : "red"
-    }
-
-    toString() {
-        return this.value + this.suit;
-    }
-}
-
-function freshDeck() {
-    return SUITS.flatMap(suit => {
-        return VALUES.map(value => {
-            return new Card(suit, value)
-        })
-    })
-}
