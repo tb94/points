@@ -17,14 +17,19 @@ module.exports = {
                     }
                 },
                 order: [['balance', 'DESC']],
-                limit: 3
+                limit: 10
             }).then(users => {
-                let medals = ["🥇", "🥈", "🥉"];
+                let medals = ["🏆", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
                 let place = 0;
                 let embed = new MessageEmbed()
-                    .setTitle("Leaderboard")
+                    .setTitle("Leaderboard");
+                let leaders;
 
-                for (var user of users) {
+                if (users.length >= 10) leaders = users;
+                else if (users.length >= 5) leaders = users.slice(0, 5);
+                else leaders = users.slice(0, 3);
+
+                for (var user of leaders) {
                     let member = members.find(m => m.user.id == user.snowflake);
                     embed.addFields({ name: "\u200b", value: `${medals[place]}`, inline: true },
                         { name: "\u200b", value: `${member.user}`, inline: true },
