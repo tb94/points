@@ -1,23 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
-const { User, Player, Blackjack, Card } = require('../db/models');
-const { Op } = require('sequelize');
-
-const row = new MessageActionRow()
-    .addComponents(
-        new MessageButton()
-            .setCustomId('hit')
-            .setLabel('Hit')
-            .setStyle('SUCCESS'),
-        new MessageButton()
-            .setCustomId('stand')
-            .setLabel('Stand')
-            .setStyle('DANGER'),
-        new MessageButton()
-            .setCustomId('double')
-            .setLabel('Double')
-            .setStyle('PRIMARY')
-    );
+const { Player, Blackjack } = require('../db/models');
+const { Blackjack: Game } = require('../games/blackjack');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -34,172 +17,16 @@ module.exports = {
         if (user.balance < bet) return interaction.reply({ content: "You don't have that many points!", ephemeral: true });
 
         let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: Player });
+        if (!table.startTime) newTable = true;
         if (table.startTime.getTime() < Date.now()) return interaction.reply({ content: "A game is already in session, wait for the next hand", ephemeral: true });
 
         let [player, newPlayer] = await Player.findCreateFind({ where: { BlackjackId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
 
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
-        user.decrement({ balance: player.bet });
-        interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} blackjack with ${player.bet} 💰 bet!` });
-
-        if (!newTable) return;
-
-        // game logic starts here
-
-        while (table.startTime.getTime() >= Date.now()) {
-            await new Promise((resolve) => { setTimeout(resolve, 2000) });
-        }
-
-        let guildMembers = await interaction.guild.fetch().then(g => g.members.cache);
-
-        let [dealer] = await Player.findCreateFind({ where: { BlackjackId: table.id, UserId: null }, defaults: { position: 0 } });
-        let players = await table.getPlayers();
-        players.sort((p1, p2) => p1.position - p2.position);
-
-        // deal hands
-        for (let p of players) {
-            await hit(table, p);
-        }
-        for (let p of players) {
-            await hit(table, p);
-        }
-
-        row.components.forEach(button => button.setDisabled(false));
-
-        let tableMessage = await table.getHandEmbeds()
-            .then(embeds => interaction.followUp({ content: "\u200b", embeds: embeds, components: [row] }));
-
-        let collector = tableMessage.createMessageComponentCollector({ componentType: 'BUTTON', time: (30 * 1000) });
-
-        players.forEach(p => p.reload().then(() => {
-            if (p.hasBlackjack()) return p.getUser()
-                .then(u => {
-                    if (u == null) throw new Error("Dealer has Blackjack!");
-                    return tableMessage.reply({ content: `${guildMembers.find(m => m.user.tag === u.username).user} got Blackjack!` });
-                });
-        }).catch(err => tableMessage.reply(err.message).then(() => collector.stop())));
-
-        collector.on('collect', i => {
-            User.findOne({ where: { snowflake: i.user.id, guild: i.guildId } })
-                .then(u => {
-                    if (!u) throw new Error(`That's not for you`);
-                    return Player.findOne({ where: { BlackjackId: table.id, UserId: u.id } })
-                })
-                .then(p => {
-                    if (!p) throw new Error(`That's not for you`);
-                    switch (i.customId) {
-                        case 'hit':
-                            collector.resetTimer();
-                            return hit(table, p);
-                        case 'stand':
-                            return stand(p);
-                        case 'double':
-                            return double(table, p);
-                        default:
-                            throw new Error("Can't do that yet");
-                    }
-                })
-                // update table embed
-                .then(() => table.getHandEmbeds())
-                .then(embeds => i.update({ embeds: embeds }))
-                // check if everyone has finished or busted
-                .then(() => table.getPlayers())
-                .then(all => {
-                    let done = all.filter(p => p.handValue >= 21 || p.stay).length;
-                    let busted = all.filter(p => p.handValue > 21).length;
-                    let blackjack = all.filter(p => p.hasBlackjack()).length;
-
-                    if (busted + blackjack >= all.length - 1) return dealer.update({ stay: true }).then(() => collector.stop());
-                    if (done >= all.length - 1) return collector.stop();
-                })
-                .catch(err => i.replied ? i.followUp({ content: err.message, ephemeral: true }) : i.reply({ content: err.message, ephemeral: true }));
-        });
-
-        collector.on('end', () => {
-            // disable buttons
-            row.components.forEach(button => {
-                button.setDisabled();
-            });
-
-            // flip dealer card
-            dealer.reload()
-                .then(() => table.getHandEmbeds(true))
-                .then(embeds => tableMessage.edit({ components: [row], embeds: embeds }))
-                // dealer hits until 17
-                .then(() => dealerPlay(dealer, table, tableMessage))
-                // payout
-                .then(() => payout(dealer, table, guildMembers, tableMessage))
-                // delete blackjack instance
-                .then(() => table.destroy({ force: true }))
-                .catch(console.log);
-        });
+        await user.decrement({ balance: player.bet });
+        await interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} blackjack with ${player.bet} 💰 bet!` });
+        await table.update({ startTime: Date.now() + (10 * 1000)})
+        if (newTable)
+            new Game(table, interaction.guild);
     }
-}
-
-async function dealerPlay(dealer, table, tableMessage) {
-    while (dealer.handValue <= 16 && !dealer.stay) {
-        await dealer.reload()
-            .then(() => hit(table, dealer))
-            .then(() => table.getHandEmbeds(true))
-            .then(embeds => tableMessage.edit({ embeds: embeds }));
-    }
-}
-
-async function payout(dealer, table, guildMembers, tableMessage) {
-    let players = await table.getPlayers()
-    await dealer.reload();
-    for (let player of players) {
-        await player.reload();
-        let user = await player.getUser();
-        if (!user) continue;
-
-        let winnings = 0;
-        let member = guildMembers.find(m => m.user.id === user.snowflake);
-
-        // bust
-        if (player.handValue > 21) continue;
-        // dealer has blackjack
-        else if (dealer.hasBlackjack() && !player.hasBlackjack()) continue;
-        // dealer has better hand
-        else if (dealer.handValue <= 21 && player.handValue < dealer.handValue) continue;
-        // player has blackjack
-        else if (player.hasBlackjack() && !dealer.hasBlackjack()) winnings = Math.ceil(player.bet * 3 / 2);
-        // push
-        else if (player.handValue == dealer.handValue) winnings = 0;
-        // other win
-        else if (player.handValue > dealer.handValue || dealer.handValue > 21) winnings = player.bet;
-
-        await user.increment({ balance: winnings + player.bet });
-        if (winnings > 0)
-            await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
-        await player.destroy();
-    }
-}
-
-function hit(table, player) {
-    if (player.handValue >= 21) throw new Error(`You already ${player.handValue === 21 ? "have 21" : "busted"}!`);
-    if (player.stay) throw new Error(`You already clicked stand`);
-
-    let card = table.deck.draw().toString();
-    return Card.create({ PlayerId: player.id, value: card.substring(0, card.length - 1), suit: card.slice(-1) })
-        .then(() => player.reload());
-}
-
-function double(table, player) {
-    return player.getUser()
-        .then(user => {
-            if (user.balance < player.bet) throw new Error("You don't have enough points for that");
-            return user.decrement({ balance: player.bet });
-        })
-        .then(() => player.getCards())
-        .then(cards => {
-            if (cards.length > 2) throw new Error("You can't double after hitting");
-        })
-        .then(() => player.increment({ bet: player.bet }))
-        .then(() => hit(table, player))
-        .then(() => player.update({ stay: true }))
-}
-
-function stand(player) {
-    if (!player.stay) return player.update({ stay: true });
 }

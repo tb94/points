@@ -8,7 +8,8 @@ module.exports = {
         host: "localhost",
         dialect: "sqlite",
         storage: "database.sqlite",
-        transactionType: "IMMEDIATE"
+        transactionType: "IMMEDIATE",
+        logging: false
     },
     production: {
         username: process.env.MYSQL_USERNAME,
