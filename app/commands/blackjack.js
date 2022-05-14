@@ -18,7 +18,7 @@ module.exports = {
 
         let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: Player });
         if (!table.startTime) newTable = true;
-        if (table.startTime.getTime() < Date.now()) return interaction.reply({ content: "A game is already in session, wait for the next hand", ephemeral: true });
+        else if (table.startTime.getTime() < Date.now()) return interaction.reply({ content: "A game is already in session, wait for the next hand", ephemeral: true });
 
         let [player, newPlayer] = await Player.findCreateFind({ where: { BlackjackId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
 

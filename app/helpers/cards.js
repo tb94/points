@@ -2,8 +2,10 @@ const SUITS = ["♠", "♣", "♥", "♦"];
 const VALUES = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
 class Deck {
-    constructor(cards = freshDeck()) {
-        this.cards = cards
+    constructor(decks = 1) {
+        this.cards = [];
+        for (let i = decks; i > 0; i--)
+            this.cards.push(...freshDeck());
     }
 
     get numberOfCards() {

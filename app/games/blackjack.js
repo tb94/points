@@ -43,6 +43,7 @@ class Blackjack {
 
         while (this.table.Players?.length <= 1 || this.table.startTime?.getTime() >= Date.now()) {
             await new Promise((resolve) => {
+                this.deck.shuffle();
                 this.table.reload({ include: [{ all: true, nested: true }] })
                     .then(() => setTimeout(resolve, 1000))
             });
