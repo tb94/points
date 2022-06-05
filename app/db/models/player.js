@@ -11,7 +11,11 @@ module.exports = (sequelize, DataTypes) => {
             Player.belongsTo(models.User);
             Player.belongsTo(models.Blackjack);
             Player.belongsTo(models.Baccarat);
+            Player.belongsTo(models.Roulette);
+
             Player.hasMany(models.Card, { onDelete: 'CASCADE' });
+            Player.hasMany(models.RouletteBet, { onDelete: 'CASCADE' });
+
             Player.addScope('defaultScope', { include: models.Card });
         }
 
