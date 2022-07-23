@@ -1,7 +1,8 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
-const { User, Player, Blackjack, Card } = require('../db/models');
+const { User, Player, Blackjack, Card, Deck } = require('../db/models');
 const { Op } = require('sequelize');
+const decks = require('../helpers/decks');
 
 const row = new MessageActionRow()
     .addComponents(
@@ -33,21 +34,37 @@ module.exports = {
         if (bet <= 0) return interaction.reply({ content: "You have to bet a real amount", ephemeral: true });
         if (user.balance < bet) return interaction.reply({ content: "You don't have that many points!", ephemeral: true });
 
-        let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: Player });
+        let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: [Player, Deck] });
+        if (table.startTime == null) {
+            newTable = true;
+            await table.update({ startTime: Date.now() + (5 * 1000) });
+        }
         if (table.startTime.getTime() < Date.now()) return interaction.reply({ content: "A game is already in session, wait for the next hand", ephemeral: true });
 
         let [player, newPlayer] = await Player.findCreateFind({ where: { BlackjackId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
 
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
+        await table.update({ startTime: table.startTime + (5 * 1000) });
         user.decrement({ balance: player.bet });
         interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} blackjack with ${player.bet} 💰 bet!` });
 
         if (!newTable) return;
 
+        if (!table.Deck || await table.Deck.cardsRemaining() <= 52) {
+            interaction.followUp("Shuffling the deck...");
+            await table.Deck?.destroy();
+            let newDeck = await decks.buildDeck(6);
+            newDeck.setBlackjack(table);
+            table.setDeck(newDeck);
+            await newDeck.save();
+            await table.save();
+            await table.reload({ include: [Player, Deck] });
+        }
+
         // game logic starts here
 
         while (table.startTime.getTime() >= Date.now()) {
-            await new Promise((resolve) => { setTimeout(resolve, 2000) });
+            await new Promise((resolve) => { setTimeout(resolve, 1250) });
         }
 
         let guildMembers = await interaction.guild.fetch().then(g => g.members.cache);
@@ -130,7 +147,8 @@ module.exports = {
                 // payout
                 .then(() => payout(dealer, table, guildMembers, tableMessage))
                 // delete blackjack instance
-                .then(() => table.destroy({ force: true }))
+                .then(() => table.update({ startTime: null }))
+                .then(() => dealer.destroy())
                 .catch(console.log);
         });
     }
@@ -140,8 +158,10 @@ async function dealerPlay(dealer, table, tableMessage) {
     while (dealer.handValue <= 16 && !dealer.stay) {
         await dealer.reload()
             .then(() => hit(table, dealer))
+            .then(() => table.reload())
             .then(() => table.getHandEmbeds(true))
-            .then(embeds => tableMessage.edit({ embeds: embeds }));
+            .then(embeds => tableMessage.edit({ embeds: embeds }))
+            .then(() => dealer.reload());
     }
 }
 
@@ -156,18 +176,17 @@ async function payout(dealer, table, guildMembers, tableMessage) {
         let winnings = 0;
         let member = guildMembers.find(m => m.user.id === user.snowflake);
 
-        // bust
-        if (player.handValue > 21) continue;
-        // dealer has blackjack
-        else if (dealer.hasBlackjack() && !player.hasBlackjack()) continue;
-        // dealer has better hand
-        else if (dealer.handValue <= 21 && player.handValue < dealer.handValue) continue;
-        // player has blackjack
-        else if (player.hasBlackjack() && !dealer.hasBlackjack()) winnings = Math.ceil(player.bet * 3 / 2);
-        // push
-        else if (player.handValue == dealer.handValue) winnings = 0;
-        // other win
-        else if (player.handValue > dealer.handValue || dealer.handValue > 21) winnings = player.bet;
+        if (player.handValue > 21                                                   // bust
+            || (dealer.hasBlackjack() && !player.hasBlackjack())                    // dealer has blackjack
+            || (dealer.handValue <= 21 && player.handValue < dealer.handValue)) {   // dealer has better hand
+            await player.destroy();
+            continue;
+        } else if (player.hasBlackjack() && !dealer.hasBlackjack())                 // player has blackjack
+            winnings = Math.ceil(player.bet * 3 / 2);
+        else if (player.handValue == dealer.handValue)                              // push
+            winnings = 0;
+        else if (player.handValue > dealer.handValue || dealer.handValue > 21)      // other win
+            winnings = player.bet;
 
         await user.increment({ balance: winnings + player.bet });
         if (winnings > 0)
@@ -176,13 +195,16 @@ async function payout(dealer, table, guildMembers, tableMessage) {
     }
 }
 
-function hit(table, player) {
+async function hit(table, player) {
     if (player.handValue >= 21) throw new Error(`You already ${player.handValue === 21 ? "have 21" : "busted"}!`);
     if (player.stay) throw new Error(`You already clicked stand`);
 
-    let card = table.deck.draw().toString();
-    return Card.create({ PlayerId: player.id, value: card.substring(0, card.length - 1), suit: card.slice(-1) })
-        .then(() => player.reload());
+    let cards = await table.Deck.getCards();
+    let card = cards[0];
+    await table.Deck.removeCard(card);
+    await player.addCard(card);
+    await table.Deck.save();
+    return player.save();
 }
 
 function double(table, player) {

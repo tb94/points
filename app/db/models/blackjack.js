@@ -13,12 +13,7 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             // define association here
             Blackjack.hasMany(models.Player, { onDelete: 'CASCADE' });
-        }
-
-        async startGame() {
-            this.deck = new Deck();
-            this.deck.shuffle();
-            this.deck.shuffle();
+            Blackjack.hasOne(models.Deck);
         }
 
         async getHandEmbeds(show = false) {
@@ -51,10 +46,6 @@ module.exports = (sequelize, DataTypes) => {
         channel: DataTypes.STRING,
         startTime: DataTypes.DATE
     }, {
-        hooks: {
-            beforeCreate: (table, options) => { table.startTime = Date.now() + (10 * 1000); },
-            afterCreate: (table, options) => { table.startGame(); }
-        },
         sequelize,
         timestamps: false,
         modelName: 'Blackjack',
