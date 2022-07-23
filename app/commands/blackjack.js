@@ -23,7 +23,7 @@ const row = new MessageActionRow()
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('blackjack')
-        .setDescription('Single Deck; Dealer stands on 17 ; Blackjack pays 3:2')
+        .setDescription('6 Decks; Dealer stands on 17 ; Blackjack pays 3:2')
         .addIntegerOption(o => o
             .setName('points')
             .setRequired(true)
