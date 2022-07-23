@@ -148,6 +148,7 @@ module.exports = {
                 .then(() => payout(dealer, table, guildMembers, tableMessage))
                 // delete blackjack instance
                 .then(() => table.update({ startTime: null }))
+                .then(() => Card.destroy({ where: { PlayerId: dealer.id } }))
                 .then(() => dealer.destroy())
                 .catch(console.log);
         });
@@ -178,19 +179,22 @@ async function payout(dealer, table, guildMembers, tableMessage) {
 
         if (player.handValue > 21                                                   // bust
             || (dealer.hasBlackjack() && !player.hasBlackjack())                    // dealer has blackjack
-            || (dealer.handValue <= 21 && player.handValue < dealer.handValue)) {   // dealer has better hand
-            await player.destroy();
-            continue;
-        } else if (player.hasBlackjack() && !dealer.hasBlackjack())                 // player has blackjack
+            || (dealer.handValue <= 21 && player.handValue < dealer.handValue)) {}  // dealer has better hand
+        else if (player.hasBlackjack() && !dealer.hasBlackjack()) {                 // player has blackjack
             winnings = Math.ceil(player.bet * 3 / 2);
+            await user.increment({ balance: winnings + player.bet });
+        }
         else if (player.handValue == dealer.handValue)                              // push
-            winnings = 0;
-        else if (player.handValue > dealer.handValue || dealer.handValue > 21)      // other win
+            await user.increment({ balance: player.bet });
+        else if (player.handValue > dealer.handValue || dealer.handValue > 21) {    // other win
             winnings = player.bet;
+            await user.increment({ balance: winnings + player.bet });
+        }
 
-        await user.increment({ balance: winnings + player.bet });
         if (winnings > 0)
             await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
+        
+        await Card.destroy({ where: { PlayerId: player.id }});
         await player.destroy();
     }
 }
