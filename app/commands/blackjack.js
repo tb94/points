@@ -148,8 +148,8 @@ module.exports = {
                 .then(() => payout(dealer, table, guildMembers, tableMessage))
                 // delete blackjack instance
                 .then(() => table.update({ startTime: null }))
-                .then(() => Card.destroy({ where: { PlayerId: dealer.id } }))
                 .then(() => dealer.destroy())
+                .then(() => Card.destroy({ where: { DeckId: null } }))
                 .catch(console.log);
         });
     }
@@ -194,7 +194,6 @@ async function payout(dealer, table, guildMembers, tableMessage) {
         if (winnings > 0)
             await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
         
-        await Card.destroy({ where: { PlayerId: player.id }});
         await player.destroy();
     }
 }
