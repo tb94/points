@@ -46,12 +46,19 @@ module.exports = {
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
         await table.update({ startTime: table.startTime + (10 * 1000) });
         user.decrement({ balance: player.bet });
-        interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} blackjack with ${player.bet} 💰 bet!` });
+        await interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} blackjack with ${player.bet} 💰 bet!` });
 
         if (!newTable) return;
 
+
+        // game logic starts here
+
+        while (table.startTime.getTime() >= Date.now()) {    
+            await new Promise((resolve) => { setTimeout(resolve, 1250) });
+        }
+
         if (!table.Deck || await table.Deck.cardsRemaining() <= 52) {
-            interaction.followUp("Shuffling the deck...");
+            await interaction.followUp("Shuffling the deck...");
             await table.Deck?.destroy();
             let newDeck = await decks.buildDeck(6);
             newDeck.setBlackjack(table);
@@ -59,12 +66,6 @@ module.exports = {
             await newDeck.save();
             await table.save();
             await table.reload({ include: [Player, Deck] });
-        }
-
-        // game logic starts here
-
-        while (table.startTime.getTime() >= Date.now()) {
-            await new Promise((resolve) => { setTimeout(resolve, 1250) });
         }
 
         let guildMembers = await interaction.guild.fetch().then(g => g.members.cache);
