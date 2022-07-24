@@ -37,14 +37,14 @@ module.exports = {
         let [table, newTable] = await Blackjack.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: [Player, Deck] });
         if (table.startTime == null) {
             newTable = true;
-            await table.update({ startTime: Date.now() + (5 * 1000) });
+            await table.update({ startTime: Date.now() + (10 * 1000) });
         }
         if (table.startTime.getTime() < Date.now()) return interaction.reply({ content: "A game is already in session, wait for the next hand", ephemeral: true });
 
         let [player, newPlayer] = await Player.findCreateFind({ where: { BlackjackId: table.id, UserId: user.id }, defaults: { bet: bet, position: (table.Players?.length ?? 0) + 1 } });
 
         if (!newPlayer) return interaction.reply({ content: `Please wait for other players to join`, ephemeral: true });
-        await table.update({ startTime: table.startTime + (5 * 1000) });
+        await table.update({ startTime: table.startTime + (10 * 1000) });
         user.decrement({ balance: player.bet });
         interaction.reply({ content: `${interaction.user} ${newTable ? "started" : "joined"} blackjack with ${player.bet} 💰 bet!` });
 
