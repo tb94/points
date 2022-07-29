@@ -148,9 +148,9 @@ module.exports = {
                 // payout
                 .then(() => payout(dealer, table, guildMembers, tableMessage))
                 // delete blackjack instance
-                .then(() => table.update({ startTime: null }))
                 .then(() => dealer.destroy())
                 .then(() => Card.destroy({ where: { DeckId: null } }))
+                .then(() => table.update({ startTime: null }))
                 .catch(console.log);
         });
     }
