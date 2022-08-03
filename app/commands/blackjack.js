@@ -50,11 +50,11 @@ module.exports = {
 
         if (!newTable) return;
 
-
         // game logic starts here
 
         while (table.startTime.getTime() >= Date.now()) {    
-            await new Promise((resolve) => { setTimeout(resolve, 1250) });
+            await new Promise((resolve) => { setTimeout(resolve, 5000) });
+            await table.reload();
         }
 
         if (!table.Deck || await table.Deck.cardsRemaining() <= 52) {
@@ -147,9 +147,8 @@ module.exports = {
                 .then(() => dealerPlay(dealer, table, tableMessage))
                 // payout
                 .then(() => payout(dealer, table, guildMembers, tableMessage))
-                // delete blackjack instance
+                // wipe the table
                 .then(() => dealer.destroy())
-                .then(() => Card.destroy({ where: { DeckId: null } }))
                 .then(() => table.update({ startTime: null }))
                 .catch(console.log);
         });
@@ -195,8 +194,15 @@ async function payout(dealer, table, guildMembers, tableMessage) {
         if (winnings > 0)
             await tableMessage.reply(`${member.user} won ${winnings} 💰!`);
         
+        await Card.destroy({ where: {
+            playerId: player.id
+        }});
         await player.destroy();
     }
+
+    await Card.destroy({ where: {
+        playerId: dealer.id
+    }});
 }
 
 async function hit(table, player) {
