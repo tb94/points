@@ -10,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             Baccarat.hasMany(models.Player, { onDelete: 'CASCADE' });
+            Baccarat.hasOne(models.Deck);
         }
 
         async getHandEmbeds() {
@@ -37,9 +38,6 @@ module.exports = (sequelize, DataTypes) => {
         channel: DataTypes.STRING,
         startTime: DataTypes.DATE
     }, {
-        hooks: {
-            beforeCreate: (table, options) => { table.startTime = Date.now() + (10 * 1000); }
-        },
         sequelize,
         timestamps: false,
     });
