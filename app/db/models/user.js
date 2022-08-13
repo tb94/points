@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
         },
         voiceActivity: DataTypes.DATE
     }, {
+        indexes: [{
+            unique: true,
+            fields: ['snowflake', 'guild']
+        }],
         sequelize,
         timestamps: false,
         modelName: 'User',
