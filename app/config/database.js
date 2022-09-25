@@ -8,6 +8,7 @@ module.exports = {
         host: "localhost",
         dialect: "sqlite",
         storage: "database.sqlite",
+        logging: false,
         transactionType: "IMMEDIATE"
     },
     production: {
@@ -16,6 +17,7 @@ module.exports = {
         database: process.env.MYSQL_DATABASE,
         host: process.env.MYSQL_HOST,
         port: process.env.MYSQL_PORT,
+        logging: false,
         dialect: 'mysql'
     }
 }
