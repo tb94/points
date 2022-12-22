@@ -24,8 +24,8 @@ module.exports = (sequelize, DataTypes) => {
                 if (cards == null || cards.length == 0) continue;
 
                 embed.setTitle(`${!user ? "Banker" : "Player"}`);
-                cards.forEach(card => embed.addField("\u200b", card.value + card.suit, true));
-                embed.setFooter(`Total: ${player.handValue % 10}`);
+                cards.forEach(card => embed.addFields({ name: `\u200b`, value: `${card.value + card.suit}`, inline: true }));
+                embed.setFooter({ text: `Total: ${player.handValue % 10}` });
 
                 embeds.unshift(embed);
             }

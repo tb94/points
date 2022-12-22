@@ -56,8 +56,6 @@ module.exports = {
             await table.reload({ include: [Player, Deck]});
         }
 
-        await table.getDeck(d => d.getCards).then(console.log);
-
         if (!table.Deck || await table.Deck.cardsRemaining() < 16) {
             await interaction.followUp("Suffling the deck...");
             await table.Deck?.destroy();

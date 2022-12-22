@@ -28,12 +28,12 @@ module.exports = (sequelize, DataTypes) => {
                 if (!user) {
                     embed.setTitle("Dealer\t\t\t\u200b");
                     cards.forEach((card, index) => embed.addFields({ name: `\u200b`, value: `${index == 0 && !show ? "🂠" : card.value + card.suit}`, inline: true }));
-                    embed.setFooter(`Total: ${show ? player.handValue : "\u200b"}`);
+                    embed.setFooter({ text: `Total: ${show ? player.handValue : "\u200b"}` });
 
                 } else {
                     embed.setTitle(`${user.username.split('#')[0]}\t\t\t${player.bet} 💰`);
-                    cards.forEach(card => embed.addField("\u200b", card.value + card.suit, true ));
-                    embed.setFooter(`Total: ${player.handValue}`);
+                    cards.forEach(card => embed.addFields({ name: `\u200b`, value: `${card.value + card.suit}`, inline: true }));
+                    embed.setFooter({ text: `Total: ${player.handValue}` });
                 }
                 embeds.unshift(embed);
             }
