@@ -1,6 +1,5 @@
 const { Model } = require('sequelize');
-const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
-const { Deck } = require('../../helpers/cards');
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = (sequelize, DataTypes) => {
     class Blackjack extends Model {
@@ -23,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
             for (let player of players) {
                 let user = await player.getUser();
                 let cards = await player.getCards();
-                let embed = new MessageEmbed().setColor("DARK_GREEN");
+                let embed = new EmbedBuilder().setColor("DarkGreen");
 
                 if (!user) {
                     embed.setTitle("Dealer\t\t\t\u200b");

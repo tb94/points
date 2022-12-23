@@ -1,23 +1,22 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const { User, Player, Blackjack, Card, Deck } = require('../db/models');
 const { Op } = require('sequelize');
 const decks = require('../helpers/decks');
 
-const row = new MessageActionRow()
+const row = new ActionRowBuilder()
     .addComponents(
-        new MessageButton()
+        new ButtonBuilder()
             .setCustomId('hit')
             .setLabel('Hit')
-            .setStyle('SUCCESS'),
-        new MessageButton()
+            .setStyle(ButtonStyle.Success),
+        new ButtonBuilder()
             .setCustomId('stand')
             .setLabel('Stand')
-            .setStyle('DANGER'),
-        new MessageButton()
+            .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
             .setCustomId('double')
             .setLabel('Double')
-            .setStyle('PRIMARY')
+            .setStyle(ButtonStyle.Primary)
     );
 
 module.exports = {
@@ -87,7 +86,7 @@ module.exports = {
         let tableMessage = await table.getHandEmbeds()
             .then(embeds => interaction.followUp({ content: "\u200b", embeds: embeds, components: [row] }));
 
-        let collector = tableMessage.createMessageComponentCollector({ componentType: 'BUTTON', time: (30 * 1000) });
+        let collector = tableMessage.createMessageComponentCollector({ componentType: ComponentType.Button, time: (30 * 1000) });
 
         players.forEach(p => p.reload().then(() => {
             if (p.hasBlackjack()) return p.getUser()

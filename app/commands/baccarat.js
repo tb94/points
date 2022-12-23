@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('discord.js');
 const { User, Player, Baccarat, Deck, Card } = require('../db/models');
 const decks = require('../helpers/decks');
 
