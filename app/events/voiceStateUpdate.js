@@ -1,7 +1,8 @@
+const { Events } = require("discord.js");
 const { User } = require("../db/models");
 
 module.exports = {
-    name: 'voiceStateUpdate',
+    name: Events.VoiceStateUpdate,
     async execute(oldState, newState) {
         if ((oldState.channel?.id == null || oldState.channel?.id == oldState.guild?.afkChannel.id)
             && (newState.channel?.id != null || newState.channel?.id == newState.guild?.afkChannel.id)) {

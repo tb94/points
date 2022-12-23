@@ -1,8 +1,8 @@
 const { User, Blackjack, sequelize, Op } = require('../db/models');
-const { Collection, OAuth2Guild } = require('discord.js');
+const { Collection, OAuth2Guild, Events } = require('discord.js');
 
 module.exports = {
-    name: 'ready',
+    name: Events.ClientReady,
     once: true,
     async execute(client) {
         // fetching guilds returns Collection of OAuth2Guilds which don't contain members

@@ -1,5 +1,5 @@
 const { Model } = require('sequelize');
-const { MessageEmbed } = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = (sequelize, DataTypes) => {
     class Baccarat extends Model {
@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
             let players = await this.getPlayers()
 
             for (let player of players) {
-                let embed = new MessageEmbed().setColor("DARK_RED");
+                let embed = new EmbedBuilder().setColor("DarkRed");
                 let user = await player.getUser();
                 let cards = await player.getCards();
                 if (cards == null || cards.length == 0) continue;

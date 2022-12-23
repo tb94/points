@@ -1,7 +1,6 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { User } = require('../db/models');
 const { Op } = require('sequelize');
-const { MessageEmbed } = require('discord.js');
 const medals = ["🏆", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
 
 module.exports = {
@@ -22,7 +21,7 @@ module.exports = {
 
         let place = 0;
         let embeds = [];
-        let top3embed = new MessageEmbed()
+        let top3embed = new EmbedBuilder()
             .setTitle("Leaderboard");
 
         users = users.filter(u => members.find(m => m.user.id === u.snowflake) != null);
@@ -39,7 +38,7 @@ module.exports = {
         embeds.push(top3embed);
         if (users.length < 5) return interaction.reply({ embeds: [top3embed] });
 
-        let midfieldEmbed = new MessageEmbed();
+        let midfieldEmbed = new EmbedBuilder();
 
         let followers = users.slice(3, 10);
 

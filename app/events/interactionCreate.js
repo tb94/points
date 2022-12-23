@@ -1,7 +1,8 @@
+const { Events } = require("discord.js");
 const { User } = require("../db/models");
 
 module.exports = {
-    name: 'interactionCreate',
+    name: Events.InteractionCreate,
     async execute(interaction) {
         if (interaction.user.bot) return;
 
