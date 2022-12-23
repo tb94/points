@@ -10,6 +10,8 @@ module.exports = {
             where: { snowflake: interaction.user.id, guild: interaction.guild.id },
             defaults: { username: interaction.user.tag }
         });
+        await user.increment('balance');
+        await user.reload();
 
         switch (true) {
             case interaction.isCommand():
