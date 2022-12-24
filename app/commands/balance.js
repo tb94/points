@@ -13,12 +13,13 @@ module.exports = {
 
 		if (target.bot) return interaction.reply({ content: `${target} cannot earn points`, ephemeral: true });
 
-		let targetUser = target.id != interaction.user.id ?
-			await User.findCreateFind({
+		if (target.id != interaction.user.id) {
+			[user] = await User.findCreateFind({
 				where: { snowflake: target.id, guild: interaction.guildId },
 				defaults: { username: target.tag }
-			}) : user;
+			});
+		}
 
-		return interaction.reply(`${target} has ${targetUser.balance} 💰`);
+		return interaction.reply(`${target} has ${user.balance} 💰`);
 	}
 }
