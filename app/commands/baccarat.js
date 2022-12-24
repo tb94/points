@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { User, Player, Baccarat, Deck, Card } = require('../db/models');
+const { Player, Baccarat, Deck, Card } = require('../db/models');
 const decks = require('../helpers/decks');
 
 module.exports = {
@@ -15,7 +15,7 @@ module.exports = {
         .addIntegerOption(o => o
             .setName('tie')
             .setDescription('Points to bet on tie')),
-    async execute(interaction) {
+    async execute(interaction, user) {
         let playerBet = interaction.options.getInteger('player') ?? 0;
         let bankerBet = interaction.options.getInteger('banker') ?? 0;
         let tieBet = interaction.options.getInteger('tie') ?? 0;
@@ -23,7 +23,6 @@ module.exports = {
         if (playerBet < 0 || bankerBet < 0 || tieBet < 0) return interaction.reply({ content: "That's not a real bet!", ephemeral: true });
         if (playerBet + bankerBet + tieBet == 0) return interaction.reply({ content: 'You have to bet on something!', ephemeral: true });
 
-        let [user] = await User.findCreateFind({ where: { username: interaction.user.tag, guild: interaction.guildId } })
         if (user.balance < playerBet + bankerBet + tieBet) return interaction.reply({ content: "You don't have that many points!", ephemeral: true });
 
         let [table, newTable] = await Baccarat.findCreateFind({ where: { guild: interaction.guildId, channel: interaction.channelId }, include: [Player, Deck] })
