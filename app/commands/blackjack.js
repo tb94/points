@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
 const { User, Player, Blackjack, Card, Deck } = require('../db/models');
-const { Op } = require('sequelize');
 const decks = require('../helpers/decks');
 
 const row = new ActionRowBuilder()
